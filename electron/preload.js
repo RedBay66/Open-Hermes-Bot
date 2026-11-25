@@ -160,6 +160,13 @@ if (process.env.VITE_DEMO !== '1') contextBridge.exposeInMainWorld('hermes', {
     ipcRenderer.on('hermes:update:event', listener);
     return () => ipcRenderer.removeListener('hermes:update:event', listener);
   },
+  getLocale: () => ipcRenderer.sendSync('hermes:locale:get'),
+  setLocale: (locale) => ipcRenderer.invoke('hermes:locale:set', locale),
+  onMenuSettings: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('hermes:menu:settings', listener);
+    return () => ipcRenderer.removeListener('hermes:menu:settings', listener);
+  },
   onStatus: (callback) => {
     const listener = (_event, status) => callback(status);
     ipcRenderer.on('hermes:status', listener);

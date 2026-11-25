@@ -4,6 +4,7 @@ import {
   type ApprovalChoice,
   type ApprovalRequest,
 } from '../approvals';
+import { localize, t } from '../i18n';
 
 type Props = {
   approval: ApprovalRequest;
@@ -31,24 +32,24 @@ export function ApprovalCard({ approval, botName, onRespond }: Props) {
     setError('');
     const result = await onRespond(choice);
     if (!result?.ok) {
-      setError(result?.error || 'The host did not take that answer.');
+      setError(result?.error || t('The host did not take that answer.'));
       setBusy(null);
     }
   };
 
   return (
-    <section className="approval-card" aria-label="Approval needed">
+    <section className="approval-card" aria-label={t('Approval needed')}>
       <div className="approval-head">
         <span className="approval-mark" aria-hidden="true">
           !
         </span>
         <div className="approval-title">
           <strong>
-            {botName ? `${botName} needs your approval` : 'Approval needed'}
+            {botName ? t('{botName} needs your approval', { botName: botName }) : t('Approval needed')}
           </strong>
           <span className="approval-sub">
             {approval.description ||
-              'This command can change the machine it runs on.'}
+              t('This command can change the machine it runs on.')}
           </span>
         </div>
       </div>
@@ -74,7 +75,7 @@ export function ApprovalCard({ approval, botName, onRespond }: Props) {
                 disabled={busy !== null}
                 onClick={() => void answer(choice)}
               >
-                {busy === choice ? 'Sending…' : approvalLabel(choice)}
+                {busy === choice ? t('Sending…') : approvalLabel(choice)}
               </button>
             ))}
         </div>
@@ -85,12 +86,12 @@ export function ApprovalCard({ approval, botName, onRespond }: Props) {
             disabled={busy !== null}
             onClick={() => void answer('deny')}
           >
-            {busy === 'deny' ? 'Sending…' : approvalLabel('deny')}
+            {busy === 'deny' ? t('Sending…') : approvalLabel('deny')}
           </button>
         ) : null}
       </div>
 
-      {error ? <p className="approval-error">{error}</p> : null}
+      {error ? <p className="approval-error">{localize(error)}</p> : null}
     </section>
   );
 }

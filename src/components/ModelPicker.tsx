@@ -9,6 +9,7 @@ import {
   useModelPrefs,
 } from '../modelPrefs';
 import { StarIcon } from './Icons';
+import { localize, t } from '../i18n';
 
 type ModelPickerProps = {
   /** Profile whose inventory to offer; the primary profile when absent. */
@@ -80,7 +81,7 @@ export function ModelPicker({
   useEffect(() => {
     if (!open || models) return;
     if (!bridge?.models) {
-      setError('Model selection needs the desktop app.');
+      setError(t('Model selection needs the desktop app.'));
       return;
     }
     let cancelled = false;
@@ -91,7 +92,7 @@ export function ModelPicker({
       .then((result) => {
         if (cancelled) return;
         if (!result.ok) {
-          setError(result.error ?? 'Could not list the models');
+          setError(result.error ?? t('Could not list the models'));
           return;
         }
         setModels(result.models ?? []);
@@ -168,7 +169,7 @@ export function ModelPicker({
   // never has to explain itself with a placeholder.
   const preferred = defaultModelPick(profile, prefs);
   const pinnedName = fallbackLabel ?? preferred?.model ?? defaultModel;
-  const chipLabel = value ? (label ?? value) : pinnedName || 'Model';
+  const chipLabel = value ? (label ?? value) : pinnedName || t('Model');
 
   return (
     <div className="model-picker" ref={rootRef}>
@@ -180,10 +181,12 @@ export function ModelPicker({
         disabled={disabled}
         title={
           value
-            ? `${value}${provider ? ` · ${provider}` : ''}`
+            ? provider
+              ? `${value} · ${provider}`
+              : value
             : pinnedName
-              ? `${pinnedName} · the model used when none is picked`
-              : 'The model this bot is configured with'
+              ? t('{pinnedName} · the model used when none is picked', { pinnedName: pinnedName })
+              : t('The model this bot is configured with')
         }
         onClick={() => setOpen((current) => !current)}
       >
@@ -191,21 +194,21 @@ export function ModelPicker({
       </button>
 
       {open ? (
-        <div className="model-menu" role="listbox" aria-label="Model">
+        <div className="model-menu" role="listbox" aria-label={t('Model')}>
           <div className="model-menu-head">
             <input
               className="model-search"
               type="text"
               value={needle}
-              placeholder="Search models"
+              placeholder={t('Search models')}
               spellCheck={false}
               autoFocus
               onChange={(event) => setNeedle(event.target.value)}
             />
           </div>
 
-          {loading ? <p className="model-note">Loading models…</p> : null}
-          {error ? <p className="model-error">{error}</p> : null}
+          {loading ? <p className="model-note">{t('Loading models…')}</p> : null}
+          {error ? <p className="model-error">{localize(error)}</p> : null}
 
           {!loading && !error ? (
             <div className="model-list">
@@ -217,14 +220,14 @@ export function ModelPicker({
                 onClick={() => pick({})}
               >
                 <span className="model-name">
-                  {pinnedName || 'Configured model'}
+                  {pinnedName || t('Configured model')}
                 </span>
-                <span className="model-provider">default</span>
+                <span className="model-provider">{t('default')}</span>
               </button>
 
               {favoriteEntries.length ? (
                 <div className="model-group">
-                  <span className="model-group-name">Favorites</span>
+                  <span className="model-group-name">{t('Favorites')}</span>
                   {favoriteEntries.map((entry) => {
                     const active =
                       entry.model === value && entry.provider === provider;
@@ -276,7 +279,7 @@ export function ModelPicker({
                       >
                         <span className="model-name">{entry.model}</span>
                         {entry.current ? (
-                          <span className="model-tag">current</span>
+                          <span className="model-tag">{t('current')}</span>
                         ) : null}
                       </button>
                     );
@@ -286,7 +289,7 @@ export function ModelPicker({
 
               {groups.length === 0 && favoriteEntries.length === 0 ? (
                 <p className="model-note">
-                  No authenticated provider offers a model yet.
+                  {t('No authenticated provider offers a model yet.')}
                 </p>
               ) : null}
             </div>
@@ -294,11 +297,11 @@ export function ModelPicker({
 
           {onEffortChange ? (
             <div className="model-effort">
-              <span className="model-effort-label">Thinking</span>
+              <span className="model-effort-label">{t('Thinking')}</span>
               <div
                 className="effort-row"
                 role="group"
-                aria-label="Thinking"
+                aria-label={t('Thinking')}
                 style={
                   {
                     '--effort-index': effortIndex(effort),
@@ -315,12 +318,12 @@ export function ModelPicker({
                       key={choice.id}
                       className={`effort-pill ${active ? 'is-active' : ''}`}
                       aria-pressed={active}
-                      title={EFFORT_HINTS[choice.id]}
+                      title={t(EFFORT_HINTS[choice.id])}
                       onClick={() =>
                         onEffortChange(choice.id === 'auto' ? undefined : choice.id)
                       }
                     >
-                      {choice.label}
+                      {t(choice.label)}
                     </button>
                   );
                 })}

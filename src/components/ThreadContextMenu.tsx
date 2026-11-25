@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Thread } from '../data';
 import { EnvelopeIcon, PencilIcon, PinIcon, PlusIcon, TrashIcon } from './Icons';
+import { t } from '../i18n';
 
 type ThreadContextMenuProps = {
   thread: Thread;
@@ -101,7 +102,7 @@ export function ThreadContextMenu({
       ref={menuRef}
       className="context-menu"
       role="menu"
-      aria-label={`Actions for ${thread.name}`}
+      aria-label={t('Actions for {name}', { name: thread.name })}
       style={{ left: position.x, top: position.y }}
       onContextMenu={(event) => event.preventDefault()}
     >
@@ -110,7 +111,7 @@ export function ThreadContextMenu({
         role="menuitem"
         className="context-menu-item"
         disabled={!canPin}
-        title={canPin ? undefined : `Up to ${pinLimit} pinned agents`}
+        title={canPin ? undefined : t('Up to {pinLimit} pinned agents', { pinLimit: pinLimit })}
         onClick={() => run(onPin)}
       >
         <span className="context-menu-icon">
@@ -118,10 +119,10 @@ export function ThreadContextMenu({
         </span>
         <span>
           {thread.pinned
-            ? 'Unpin'
+            ? t('Unpin')
             : canPin
-              ? 'Pin'
-              : `Pin (max ${pinLimit})`}
+              ? t('Pin')
+              : t('Pin (max {pinLimit})', { pinLimit: pinLimit })}
         </span>
       </button>
 
@@ -130,13 +131,13 @@ export function ThreadContextMenu({
         role="menuitem"
         className="context-menu-item"
         disabled={isGroup}
-        title={isGroup ? 'A group keeps one room' : undefined}
+        title={isGroup ? t('A group keeps one room') : undefined}
         onClick={() => run(onNewConversation)}
       >
         <span className="context-menu-icon">
           <PlusIcon size={15} />
         </span>
-        <span>New conversation</span>
+        <span>{t('New conversation')}</span>
       </button>
 
       <button
@@ -148,7 +149,7 @@ export function ThreadContextMenu({
         <span className="context-menu-icon">
           <EnvelopeIcon size={15} />
         </span>
-        <span>{thread.unread ? 'Mark as read' : 'Mark as unread'}</span>
+        <span>{thread.unread ? t('Mark as read') : t('Mark as unread')}</span>
       </button>
 
       <button
@@ -160,7 +161,7 @@ export function ThreadContextMenu({
         <span className="context-menu-icon">
           <PencilIcon size={15} />
         </span>
-        <span>{isGroup ? 'Edit group' : 'Edit bot'}</span>
+        <span>{isGroup ? t('Edit group') : t('Edit bot')}</span>
       </button>
 
       <div className="context-menu-separator" role="separator" />
@@ -174,15 +175,15 @@ export function ThreadContextMenu({
           canDelete
             ? undefined
             : thread.system
-              ? 'The default bot cannot be deleted'
-              : 'Keep at least one agent'
+              ? t('The default bot cannot be deleted')
+              : t('Keep at least one agent')
         }
         onClick={() => run(onDelete)}
       >
         <span className="context-menu-icon">
           <TrashIcon size={15} />
         </span>
-        <span>{isGroup ? 'Delete group' : 'Delete bot'}</span>
+        <span>{isGroup ? t('Delete group') : t('Delete bot')}</span>
       </button>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { HermesSkill } from '../hermes';
 import { ProfilePicker } from './ProfilePicker';
+import { localize, t } from '../i18n';
 
 /**
  * The skills: what a bot can be taught to do.
@@ -56,7 +57,7 @@ export function SkillsSettings() {
         profile,
       });
       if (!result.ok) {
-        setError(result.error ?? 'The skill could not be turned on or off.');
+        setError(result.error ?? t('The skill could not be turned on or off.'));
         setSkills((current) =>
           (current ?? []).map((entry) =>
             entry.name === skill.name ? { ...entry, enabled: !enabled } : entry,
@@ -67,7 +68,7 @@ export function SkillsSettings() {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'The skill could not be turned on or off.',
+          : t('The skill could not be turned on or off.'),
       );
       setSkills((current) =>
         (current ?? []).map((entry) =>
@@ -85,32 +86,31 @@ export function SkillsSettings() {
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Skills</h2>
+          <h2>{t('Skills')}</h2>
           <p>
-            What your bots know how to do. They live on the host, and they are
-            turned on and off there.
+            {t('What your bots know how to do. They live on the host, and they are turned on and off there.')}
           </p>
         </div>
         <div className="settings-page-side">
           <span className="settings-card-meta">
-            {skills ? `${on} of ${skills.length} on` : 'Reading the host…'}
+            {skills ? t('{on} of {length} on', { on: on, length: skills.length }) : t('Reading the host…')}
           </span>
         </div>
       </header>
 
-      {error ? <p className="models-error">{error}</p> : null}
+      {error ? <p className="models-error">{localize(error)}</p> : null}
 
       <ProfilePicker
         value={profile}
         onChange={setProfile}
-        label="Whose skills?"
+        label={t('Whose skills?')}
       />
 
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>The skills</h3>
-            <p>A skill that is off is not offered to the bots.</p>
+            <h3>{t('The skills')}</h3>
+            <p>{t('A skill that is off is not offered to the bots.')}</p>
           </div>
         </header>
         <div className="capability-list">
@@ -142,7 +142,7 @@ export function SkillsSettings() {
           ))}
           {skills && skills.length === 0 ? (
             <p className="settings-hint">
-              The host holds no skill yet.
+              {t('The host holds no skill yet.')}
             </p>
           ) : null}
         </div>

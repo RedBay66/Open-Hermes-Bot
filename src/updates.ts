@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 // What the app knows about its own next version.
 //
 // The main process does the looking, the downloading and the taking over.
@@ -85,24 +87,31 @@ export function applyUpdateEvent(
 export function updateDetail(status: UpdateStatus): string {
   switch (status.state) {
     case 'idle':
-      return 'Hermes Bot finds its next version on the releases page.';
+      return t('Hermes Bot finds its next version on the releases page.');
     case 'checking':
-      return 'Looking for a newer version…';
+      return t('Looking for a newer version…');
     case 'available':
-      return `Version ${status.version} is on the releases page.`;
+      return status.message
+        ? t(status.message)
+        : t('Version {version} is on the releases page.', {
+            version: status.version,
+          });
     case 'downloading':
-      return `Downloading ${status.version} — ${status.percent}%.`;
+      return t('Downloading {version} — {percent}%.', {
+        version: status.version,
+        percent: status.percent,
+      });
     case 'ready':
-      return `Version ${status.version} is ready.`;
+      return t('Version {version} is ready.', { version: status.version });
     case 'current':
-      return 'Hermes Bot is up to date.';
+      return t('Hermes Bot is up to date.');
     case 'unsupported':
-      return (
+      return t(
         status.message ||
-        'Updates are found by the installed app, not by a copy running from the sources.'
+          'Updates are found by the installed app, not by a copy running from the sources.',
       );
     case 'error':
-      return status.message || 'Could not look for an update.';
+      return t(status.message || 'Could not look for an update.');
   }
 }
 
@@ -110,17 +119,17 @@ export function updateDetail(status: UpdateStatus): string {
 export function updateButtonLabel(status: UpdateStatus): string {
   switch (status.state) {
     case 'checking':
-      return 'Checking…';
+      return t('Checking…');
     case 'downloading':
-      return `Downloading… ${status.percent}%`;
+      return t('Downloading… {percent}%', { percent: status.percent });
     case 'ready':
-      return 'Restarting…';
+      return t('Restarting…');
     case 'current':
-      return 'Check again';
+      return t('Check again');
     case 'error':
-      return 'Try again';
+      return t('Try again');
     default:
-      return 'Check for updates';
+      return t('Check for updates');
   }
 }
 
@@ -194,21 +203,27 @@ export function updateProgress(status: UpdateStatus): number | null {
 export function updateMarkWords(status: UpdateStatus): string {
   switch (status.state) {
     case 'idle':
-      return 'Check for an update';
+      return t('Check for an update');
     case 'checking':
-      return 'Looking for an update…';
+      return t('Looking for an update…');
     case 'available':
-      return 'An update was found';
+      return status.message
+        ? t('Upstream update found. This edition will not install it.')
+        : t('An update was found');
     case 'downloading':
-      return `Downloading the update — ${status.percent}%`;
+      return t('Downloading the update — {percent}%', {
+        percent: status.percent,
+      });
     case 'ready':
-      return 'The update is ready: the app restarts by itself';
+      return t('The update is ready: the app restarts by itself');
     case 'current':
-      return 'The app is up to date';
+      return t('The app is up to date');
     case 'error':
-      return 'The look for an update failed';
+      return t('The look for an update failed');
     case 'unsupported':
-      return 'The app as it runs from the sources cannot look for an update';
+      return t(
+        'The app as it runs from the sources cannot look for an update',
+      );
   }
 }
 
@@ -265,5 +280,8 @@ export function releaseDateWords(date: string): string {
   if (!date) return '';
   const when = new Date(date);
   if (Number.isNaN(when.getTime())) return '';
-  return `${MONTHS[when.getUTCMonth()]} ${when.getUTCDate()}`;
+  return t('{month} {day}', {
+    month: t(MONTHS[when.getUTCMonth()]),
+    day: when.getUTCDate(),
+  });
 }

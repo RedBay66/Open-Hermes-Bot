@@ -2,6 +2,7 @@ import type { AvatarSpec, SingleAvatar } from '../data';
 import { BloubSvg } from './Bloub';
 import { MoodBloub } from './MoodBloub';
 import type { MoodId } from '../moods';
+import { t } from '../i18n';
 
 type AgentAvatarProps = {
   avatar: AvatarSpec;
@@ -117,7 +118,7 @@ export function AgentAvatar({
           <span
             className="bloub-badge"
             role="img"
-            aria-label="Unread"
+            aria-label={t('Unread')}
             style={{
               width: badgeSize,
               height: badgeSize,
@@ -140,7 +141,7 @@ export function AgentAvatar({
         <span
           className="bloub-badge"
           role="img"
-          aria-label="Unread"
+          aria-label={t('Unread')}
           style={{
             width: badgeSize,
             height: badgeSize,

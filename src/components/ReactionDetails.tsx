@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Reaction } from '../data';
+import { t } from '../i18n';
 
 /** The reactions of one message, gathered by emoji: one pill per emoji. */
 export type ReactionGroup = {
@@ -27,11 +28,11 @@ export function groupReactions(reactions: Reaction[]): ReactionGroup[] {
 
 /** What a group says: who left it. */
 export function groupNames(group: ReactionGroup): string {
-  if (!group.by.length) return 'Un bot a réagi';
-  if (group.by.length === 1) return `${group.by[0]} a réagi`;
+  if (!group.by.length) return t('A bot reacted');
+  if (group.by.length === 1) return t('{name} reacted', { name: group.by[0] });
   const last = group.by[group.by.length - 1];
   const others = group.by.slice(0, -1).join(', ');
-  return `${others} et ${last} ont réagi`;
+  return t('{others} and {last} reacted', { others, last });
 }
 
 type Props = {
@@ -95,9 +96,9 @@ export function ReactionDetails({ x, y, groups, onClose }: Props) {
       ref={panelRef}
       style={{ left: spot.left, top: spot.top }}
       role="dialog"
-      aria-label="Who reacted"
+      aria-label={t('Who reacted')}
     >
-      <div className="reaction-details-title">Réactions</div>
+      <div className="reaction-details-title">{t('Reactions')}</div>
       {groups.map((group) => (
         <div className="reaction-detail" key={group.emoji}>
           <span className="detail-emoji">{group.emoji}</span>

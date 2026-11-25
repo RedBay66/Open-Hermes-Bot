@@ -1,5 +1,7 @@
 # Hermes Bot
 
+> **个人简体中文版。** 这不是 [AZERDSQ131/Open-Hermes-Bot](https://github.com/AZERDSQ131/Open-Hermes-Bot) 的官方发布。界面默认为简体中文，可在设置里改回英文。连接、会话、助手、群聊、工具和记忆仍由你自己的 Hermes 主机负责。官方更新会用英文原版替换这份汉化，所以这个版本**不会自动下载或安装上游发布**。许可仍是 MIT；第三方声明见 `THIRD_PARTY_NOTICES.md`。
+
 A macOS Electron clone of the multi-agent chat interface: dark sidebar, Bloub agent
 avatars, cream user bubbles and a floating composer.
 

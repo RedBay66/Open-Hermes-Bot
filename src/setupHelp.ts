@@ -13,6 +13,7 @@
 // turns them into something a person can act on.
 
 import type { HermesConnectionMode } from './hermes';
+import { t } from './i18n';
 
 /** Why the key could not be read from the machine that runs Hermes. */
 export type KeyReadReason =
@@ -66,10 +67,10 @@ export function machineLabel(
   mode: HermesConnectionMode,
   host?: string,
 ): string {
-  if (mode === 'local') return 'this Mac';
+  if (mode === 'local') return t('this Mac');
   // A host is only named when Hermes runs elsewhere; an empty one is still
   // a machine the sentence has to call something.
-  return String(host ?? '').trim() || 'the host';
+  return String(host ?? '').trim() || t('the host');
 }
 
 /** The file Hermes keeps its key in, and the only file the app reads. */
@@ -95,12 +96,13 @@ const RESTART_LINE = 'hermes gateway restart';
  */
 function whereToRun(mode: HermesConnectionMode, host: string): string {
   if (mode === 'local') {
-    return 'Run these in a terminal on this Mac.';
+    return t('Run these in a terminal on this Mac.');
   }
-  return `Run these on ${machineLabel(mode, host)}, once ssh ${machineLabel(
-    mode,
-    host,
-  )} works in a terminal without asking anything.`;
+  const where = machineLabel(mode, host);
+  return t(
+    'Run these on {where}, once ssh {where} works in a terminal without asking anything.',
+    { where },
+  );
 }
 
 /**
@@ -115,13 +117,21 @@ export function describeFailure(failure: ConnectionFailure): Help {
     return {
       title:
         failure.mode === 'local'
-          ? `Hermes is here, but its API server is not listening on 127.0.0.1:${failure.port}.`
-          : `The API server of ${where} is not listening on port ${failure.port}.`,
+          ? t(
+              'Hermes is here, but its API server is not listening on 127.0.0.1:{port}.',
+              { port: failure.port },
+            )
+          : t('The API server of {where} is not listening on port {port}.', {
+              where,
+              port: failure.port,
+            }),
       lines: [
-        'The key is in hand. The API server is a listener of its own: it comes up with the gateway, so a key written a moment ago is read at the next restart.',
+        t(
+          'The key is in hand. The API server is a listener of its own: it comes up with the gateway, so a key written a moment ago is read at the next restart.',
+        ),
         failure.mode === 'local'
-          ? 'Restart the gateway on this Mac, then try again:'
-          : `Restart the gateway on ${where}, then try again:`,
+          ? t('Restart the gateway on this Mac, then try again:')
+          : t('Restart the gateway on {where}, then try again:', { where }),
       ],
       code: [RESTART_LINE],
     };
@@ -133,27 +143,39 @@ export function describeFailure(failure: ConnectionFailure): Help {
     // commands create it. The app reads one path: a Hermes that moved its
     // home with HERMES_HOME is not where the app looks.
     return {
-      title: `There is no ${HERMES_ENV} on ${where} yet.`,
+      title: t('There is no {file} on {where} yet.', {
+        file: HERMES_ENV,
+        where,
+      }),
       lines: [
-        `${HERMES_ENV} is where Hermes keeps the key of its API server. It is written when something is saved to it, so a fresh install may not have one.`,
-        `${whereToRun(failure.mode, failure.host)} The first creates the file and puts a key in it, readable only by you; the second restarts the gateway.`,
-        'If Hermes keeps its home somewhere else (HERMES_HOME), the app does not read that one.',
+        t(
+          '{file} is where Hermes keeps the key of its API server. It is written when something is saved to it, so a fresh install may not have one.',
+          { file: HERMES_ENV },
+        ),
+        `${whereToRun(failure.mode, failure.host)} ${t('The first creates the file and puts a key in it, readable only by you; the second restarts the gateway.')}`,
+        t(
+          'If Hermes keeps its home somewhere else (HERMES_HOME), the app does not read that one.',
+        ),
       ],
       code: [SET_KEY_LINE, RESTART_LINE],
-      after: 'Then try again: the app reads the key on its own, and keeps it in the Keychain.',
+      after: t(
+        'Then try again: the app reads the key on its own, and keeps it in the Keychain.',
+      ),
       details: failure.details,
     };
   }
 
   if (failure.reason === 'short-key') {
     return {
-      title: `The key in ${HERMES_ENV} is too short.`,
+      title: t('The key in {file} is too short.', { file: HERMES_ENV }),
       lines: [
-        'Hermes ignores a key shorter than 16 characters, so its API server never starts.',
-        'Have Hermes write a new one over it, and restart the gateway:',
+        t(
+          'Hermes ignores a key shorter than 16 characters, so its API server never starts.',
+        ),
+        t('Have Hermes write a new one over it, and restart the gateway:'),
       ],
       code: [SET_KEY_LINE, RESTART_LINE],
-      after: 'Then try again: the app reads the key on its own.',
+      after: t('Then try again: the app reads the key on its own.'),
       details: failure.details,
     };
   }
@@ -164,30 +186,46 @@ export function describeFailure(failure: ConnectionFailure): Help {
     return {
       title:
         failure.mode === 'local'
-          ? 'The key could not be read on this Mac.'
-          : `The key could not be read from ${where}.`,
+          ? t('The key could not be read on this Mac.')
+          : t('The key could not be read from {where}.', { where }),
       lines:
         failure.mode === 'local'
           ? [
-              `A command that reads ${HERMES_ENV} failed before it could answer.`,
-              'Try again; if it keeps failing, open a terminal on this Mac and check that the file is readable.',
+              t(
+                'A command that reads {file} failed before it could answer.',
+                { file: HERMES_ENV },
+              ),
+              t(
+                'Try again; if it keeps failing, open a terminal on this Mac and check that the file is readable.',
+              ),
             ]
           : [
-              `The app reaches ${where} over SSH without a terminal, so anything that would ask a question fails: a password, the passphrase of a key, a security key, or a host key seen for the first time.`,
-              `In a terminal on this Mac, ssh ${where} has to work without asking anything. Then try again.`,
+              t(
+                'The app reaches {where} over SSH without a terminal, so anything that would ask a question fails: a password, the passphrase of a key, a security key, or a host key seen for the first time.',
+                { where },
+              ),
+              t(
+                'In a terminal on this Mac, ssh {where} has to work without asking anything. Then try again.',
+                { where },
+              ),
             ],
       details: failure.details,
     };
   }
 
   return {
-    title: "Hermes' API server is off.",
+    title: t("Hermes' API server is off."),
     lines: [
-      `Hermes Bot talks to Hermes through its API server, and that server is off until ${HERMES_ENV} holds a key. The desktop app Hermes ships with never needs one, so a fresh install does not have it.`,
-      `${whereToRun(failure.mode, failure.host)} They have Hermes write a key into its own file, readable only by you, and restart the gateway so it is read.`,
+      t(
+        'Hermes Bot talks to Hermes through its API server, and that server is off until {file} holds a key. The desktop app Hermes ships with never needs one, so a fresh install does not have it.',
+        { file: HERMES_ENV },
+      ),
+      `${whereToRun(failure.mode, failure.host)} ${t('They have Hermes write a key into its own file, readable only by you, and restart the gateway so it is read.')}`,
     ],
     code: [SET_KEY_LINE, RESTART_LINE],
-    after: 'Then try again: the app reads the key on its own, and keeps it in the Keychain.',
+    after: t(
+      'Then try again: the app reads the key on its own, and keeps it in the Keychain.',
+    ),
     details: failure.details,
   };
 }

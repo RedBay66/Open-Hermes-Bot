@@ -16,6 +16,7 @@ import { SetupHelp } from './SetupHelp';
 import { SchedulesSettings } from './SchedulesSettings';
 import { describeFailure, keyFailureHelp, type Help } from '../setupHelp';
 import type { ScheduleRun } from '../schedules';
+import { getLocale, localize, setLocale, t, type Locale } from '../i18n';
 
 /** What a read of the key answers, whether the bridge answered or threw. */
 type ImportedKey = Awaited<ReturnType<HermesBridge['importKey']>>;
@@ -30,7 +31,8 @@ export type Section =
   | 'connectors'
   | 'skills'
   | 'tools'
-  | 'phone';
+  | 'phone'
+  | 'language';
 
 type SettingsViewProps = {
   status: HermesStatus;
@@ -81,8 +83,8 @@ function scanSilence(message: string | undefined, port: string) {
     message === 'Nothing is listening on that port' ||
     message === 'No answer on the local port';
   return nothing
-    ? `No Hermes answered on 127.0.0.1:${port}. Is it running?`
-    : (message ?? 'Could not reach the server');
+    ? t('No Hermes answered on 127.0.0.1:{port}. Is it running?', { port })
+    : localize(message || '') || t('Could not reach the server');
 }
 
 export function SettingsView({
@@ -111,6 +113,7 @@ export function SettingsView({
   const [keyElsewhere, setKeyElsewhere] = useState('');
   const [advanced, setAdvanced] = useState(false);
   const [section, setSection] = useState<Section>(opened ?? 'connection');
+  const [locale, setLocaleState] = useState<Locale>(getLocale);
   const [busy, setBusy] = useState<BusyAction>(null);
   const [tested, setTested] = useState<{
     fingerprint: string;
@@ -188,18 +191,16 @@ export function SettingsView({
       ? testStatus.state === 'connected'
         ? {
             tone: 'ok' as const,
-            text: `Reachable · Hermes ${testStatus.version ?? '?'} · gateway ${
-              testStatus.gateway ?? '?'
-            }`,
+            text: t('Reachable · Hermes {p0} · gateway {p1}', { p0: testStatus.version ?? '?', p1: testStatus.gateway ?? '?' }),
           }
         : {
             tone: 'error' as const,
-            text: testStatus.message ?? 'Could not reach the server',
+            text: testStatus.message ?? t('Could not reach the server'),
           }
       : notice
         ? { tone: 'ok' as const, text: notice }
         : status.state === 'error' && status.message
-          ? { tone: 'error' as const, text: status.message }
+          ? { tone: 'error' as const, text: localize(status.message) }
           : null;
 
   const disabled = Boolean(busy) || !bridge;
@@ -254,7 +255,7 @@ export function SettingsView({
           error: failure.message,
         }));
       if (!imported.ok) {
-        setError(imported.error ?? 'Could not read the key from this Mac');
+        setError(imported.error ?? t('Could not read the key from this Mac'));
         setHelp(keyFailureHelp(imported.reason, at, '', imported.details));
         setBusy(null);
         return;
@@ -278,7 +279,7 @@ export function SettingsView({
         settings: undefined,
       }));
     if (!saved.ok) {
-      setError(saved.error ?? 'Could not save the connection');
+      setError(saved.error ?? t('Could not save the connection'));
       setBusy(null);
       return;
     }
@@ -335,7 +336,10 @@ export function SettingsView({
           error: failure.message,
         }));
       if (!imported.ok) {
-        setError(imported.error ?? `Could not read the key from ${name}`);
+        setError(
+          imported.error ??
+            t('Could not read the key from {name}', { name }),
+        );
         setHelp(keyFailureHelp(imported.reason, at, name, imported.details));
         setBusy(null);
         return;
@@ -362,9 +366,9 @@ export function SettingsView({
       setHasKey(true);
       setKeyElsewhere('');
       setApiKey('');
-      setNotice(`Key imported from ${host || 'the server'}.`);
+      setNotice(t('Key imported from {p0}.', { p0: host || t('the server') }));
     } else {
-      setError(result.error ?? 'Could not read the key from the server');
+      setError(result.error ?? t('Could not read the key from the server'));
       setHelp(
         keyFailureHelp(
           result.reason,
@@ -408,9 +412,9 @@ export function SettingsView({
     setApiKey('');
     if (saved.ok) {
       setHasKey(false);
-      setNotice('Stored key removed from the Keychain.');
+      setNotice(t('Stored key removed from the Keychain.'));
     } else {
-      setError(saved.error ?? 'Could not remove the key');
+      setError(saved.error ?? t('Could not remove the key'));
     }
     setBusy(null);
   }
@@ -427,18 +431,18 @@ export function SettingsView({
           type="button"
           className="settings-back"
           onClick={onClose}
-          aria-label="Back to Hermes Bot"
-          title="Back  Esc"
+          aria-label={t('Back to Hermes Bot')}
+          title={t('Back Esc')}
         >
           <ChevronLeftIcon size={17} />
         </button>
 
         <h1 id="settings-title" className="settings-rail-title">
-          Settings
+          {t('Settings')}
         </h1>
 
-        <nav className="settings-nav" aria-label="Settings sections">
-          <span className="settings-nav-group">Hermes</span>
+        <nav className="settings-nav" aria-label={t('Settings sections')}>
+          <span className="settings-nav-group">{t('Hermes')}</span>
           <button
             type="button"
             className={`settings-nav-item ${
@@ -447,7 +451,7 @@ export function SettingsView({
             aria-current={section === 'connection' ? 'page' : undefined}
             onClick={() => setSection('connection')}
           >
-            Connection
+            {t('Connection')}
           </button>
           <button
             type="button"
@@ -457,7 +461,7 @@ export function SettingsView({
             aria-current={section === 'models' ? 'page' : undefined}
             onClick={() => setSection('models')}
           >
-            Models
+            {t('Models')}
           </button>
           <button
             type="button"
@@ -467,7 +471,17 @@ export function SettingsView({
             aria-current={section === 'updates' ? 'page' : undefined}
             onClick={() => setSection('updates')}
           >
-            Updates
+            {t('Updates')}
+          </button>
+          <button
+            type="button"
+            className={`settings-nav-item ${
+              section === 'language' ? 'is-active' : ''
+            }`}
+            aria-current={section === 'language' ? 'page' : undefined}
+            onClick={() => setSection('language')}
+          >
+            {t('Language')}
           </button>
           <button
             type="button"
@@ -477,7 +491,7 @@ export function SettingsView({
             aria-current={section === 'setup' ? 'page' : undefined}
             onClick={() => setSection('setup')}
           >
-            Setup
+            {t('Setup')}
           </button>
           <button
             type="button"
@@ -487,9 +501,9 @@ export function SettingsView({
             aria-current={section === 'schedules' ? 'page' : undefined}
             onClick={() => setSection('schedules')}
           >
-            Schedules
+            {t('Schedules')}
           </button>
-          <span className="settings-nav-group">Apps</span>
+          <span className="settings-nav-group">{t('Apps')}</span>
           <button
             type="button"
             className={`settings-nav-item ${
@@ -498,7 +512,7 @@ export function SettingsView({
             aria-current={section === 'phone' ? 'page' : undefined}
             onClick={() => setSection('phone')}
           >
-            Phone
+            {t('Phone')}
           </button>
           <button
             type="button"
@@ -508,7 +522,7 @@ export function SettingsView({
             aria-current={section === 'connectors' ? 'page' : undefined}
             onClick={() => setSection('connectors')}
           >
-            Connectors
+            {t('Connectors')}
           </button>
           <button
             type="button"
@@ -518,7 +532,7 @@ export function SettingsView({
             aria-current={section === 'skills' ? 'page' : undefined}
             onClick={() => setSection('skills')}
           >
-            Skills
+            {t('Skills')}
           </button>
           <button
             type="button"
@@ -528,7 +542,7 @@ export function SettingsView({
             aria-current={section === 'tools' ? 'page' : undefined}
             onClick={() => setSection('tools')}
           >
-            Tools
+            {t('Tools')}
           </button>
         </nav>
       </aside>
@@ -539,18 +553,18 @@ export function SettingsView({
             <div className="settings-page">
               <header className="settings-page-head">
                 <div>
-                  <h2>Connection</h2>
+                  <h2>{t('Connection')}</h2>
                   <p>
-                    Link Hermes Bot to the Hermes Agent running on your machine.
+                    {t('Link Hermes Bot to the Hermes Agent running on your machine.')}
                   </p>
                 </div>
                 <div className="settings-page-side">
                   <span className="connection-state" data-state={status.state}>
                     <span className="connection-state-dot" aria-hidden="true" />
                     <span className="connection-state-text">
-                      {STATE_LABEL[status.state]}
+                      {t(STATE_LABEL[status.state])}
                       {status.state === 'connected' && status.version
-                        ? ` · Hermes ${status.version}`
+                        ? t('· Hermes {version}', { version: status.version })
                         : null}
                     </span>
                   </span>
@@ -561,7 +575,7 @@ export function SettingsView({
                       disabled={disabled}
                       onClick={handleDisconnect}
                     >
-                      {busy === 'disconnect' ? 'Closing…' : 'Disconnect'}
+                      {busy === 'disconnect' ? t('Closing…') : t('Disconnect')}
                     </button>
                   ) : (
                     <button
@@ -570,7 +584,7 @@ export function SettingsView({
                       disabled={disabled}
                       onClick={handleConnect}
                     >
-                      {busy === 'connect' ? 'Connecting…' : 'Connect'}
+                      {busy === 'connect' ? t('Connecting…') : t('Connect')}
                     </button>
                   )}
                 </div>
@@ -578,25 +592,25 @@ export function SettingsView({
 
               {bridge ? null : (
                 <p className="settings-notice">
-                  Connection settings are only available inside the desktop app.
+                  {t('Connection settings are only available inside the desktop app.')}
                 </p>
               )}
 
               <section className="settings-card">
                 <header className="settings-card-head">
                   <div>
-                    <h3>Server</h3>
-                    <p>How Hermes Bot reaches Hermes.</p>
+                    <h3>{t('Server')}</h3>
+                    <p>{t('How Hermes Bot reaches Hermes.')}</p>
                   </div>
                   <span className="settings-card-meta">
-                    {hasKey ? 'Key in Keychain' : 'No key stored'}
+                    {hasKey ? t('Key in Keychain') : t('No key stored')}
                   </span>
                 </header>
 
                 <div className="settings-form">
                   <fieldset className="settings-modes">
                     <legend className="settings-field-label">
-                      Where does Hermes run?
+                      {t('Where does Hermes run?')}
                     </legend>
                     <label className="settings-mode">
                       <input
@@ -613,8 +627,8 @@ export function SettingsView({
                         }}
                       />
                       <span className="settings-mode-copy">
-                        <strong>This Mac</strong>
-                        <em>Hermes runs on this machine. No tunnel, no SSH.</em>
+                        <strong>{t('This Mac')}</strong>
+                        <em>{t('Hermes runs on this machine. No tunnel, no SSH.')}</em>
                       </span>
                     </label>
                     <label className="settings-mode">
@@ -632,9 +646,9 @@ export function SettingsView({
                         }}
                       />
                       <span className="settings-mode-copy">
-                        <strong>Another machine</strong>
+                        <strong>{t('Another machine')}</strong>
                         <em>
-                          Hermes runs elsewhere, and the app reaches it over SSH.
+                          {t('Hermes runs elsewhere, and the app reaches it over SSH.')}
                         </em>
                       </span>
                     </label>
@@ -660,8 +674,8 @@ export function SettingsView({
                               <span className="settings-host-cue">
                                 {status.state === 'connected' &&
                                 host === name
-                                  ? 'Connected'
-                                  : 'Connect'}
+                                  ? t('Connected')
+                                  : t('Connect')}
                               </span>
                             </button>
                           ))}
@@ -669,18 +683,18 @@ export function SettingsView({
                       ) : null}
                       {savedHosts !== null && savedHosts.length === 0 ? (
                         <p className="settings-hosts-hint">
-                          No host saved in your SSH config — write it below.
+                          {t('No host saved in your SSH config — write it below.')}
                         </p>
                       ) : null}
                       <label className="settings-field">
-                        <span className="settings-field-label">SSH host</span>
+                        <span className="settings-field-label">{t('SSH host')}</span>
                         <input
                           id="connection-host"
                           type="text"
                           value={host}
                           spellCheck={false}
                           autoComplete="off"
-                          placeholder="my-hermes-host"
+                          placeholder={t('my-hermes-host')}
                           disabled={Boolean(busy)}
                           onChange={(event) => {
                             setHost(event.target.value);
@@ -690,8 +704,7 @@ export function SettingsView({
                           }}
                         />
                         <span className="settings-field-note">
-                          The machine running Hermes, reached with your existing
-                          SSH config.
+                          {t('The machine running Hermes, reached with your existing SSH config.')}
                         </span>
                       </label>
                     </>
@@ -708,13 +721,12 @@ export function SettingsView({
                             onClick={handleClearKey}
                           >
                             {busy === 'clear'
-                              ? 'Removing…'
-                              : 'Remove stored key'}
+                              ? t('Removing…')
+                              : t('Remove stored key')}
                           </button>
                         </div>
                         <span className="settings-field-note">
-                          Kept in the macOS Keychain, never written by Hermes
-                          Bot.
+                          {t('Kept in the macOS Keychain, never written by Hermes Bot.')}
                         </span>
                       </div>
                     ) : (
@@ -729,7 +741,7 @@ export function SettingsView({
                         className="settings-field-label"
                         htmlFor="connection-key"
                       >
-                        API key
+                        {t('API key')}
                       </label>
                       <input
                         id="connection-key"
@@ -739,7 +751,7 @@ export function SettingsView({
                         spellCheck={false}
                         disabled={Boolean(busy)}
                         placeholder={
-                          hasKey ? 'Saved in Keychain' : 'Paste API_SERVER_KEY'
+                          hasKey ? t('Saved in Keychain') : 'Paste API_SERVER_KEY'
                         }
                         onChange={(event) => {
                           setApiKey(event.target.value);
@@ -756,8 +768,8 @@ export function SettingsView({
                           onClick={handleImportKey}
                         >
                           {busy === 'import'
-                            ? 'Reading…'
-                            : `Import from ${host || 'server'}`}
+                            ? t('Reading…')
+                            : t('Import from {p0}', { p0: host || 'server' })}
                         </button>
                         {hasKey ? (
                           <button
@@ -767,20 +779,17 @@ export function SettingsView({
                             onClick={handleClearKey}
                           >
                             {busy === 'clear'
-                              ? 'Removing…'
-                              : 'Remove stored key'}
+                              ? t('Removing…')
+                              : t('Remove stored key')}
                           </button>
                         ) : null}
                       </div>
                       <span className="settings-field-note">
-                        Kept in the macOS Keychain, never written by Hermes
-                        Bot.
+                        {t('Kept in the macOS Keychain, never written by Hermes Bot.')}
                       </span>
                       {keyElsewhere ? (
                         <span className="settings-field-note is-warning">
-                          The saved key was read from {keyElsewhere}. A key
-                          stays with the machine whose Hermes made it — read
-                          this one, or paste it above.
+                          {t('The saved key was read from')} {keyElsewhere}{t('. A key stays with the machine whose Hermes made it — read this one, or paste it above.')}
                         </span>
                       ) : null}
                     </div>
@@ -793,8 +802,8 @@ export function SettingsView({
               >
                 <header className="settings-card-head">
                   <div>
-                    <h3>Advanced</h3>
-                    <p>Ports, tunnel and launch behaviour.</p>
+                    <h3>{t('Advanced')}</h3>
+                    <p>{t('Ports, tunnel and launch behaviour.')}</p>
                   </div>
                   <button
                     type="button"
@@ -802,10 +811,10 @@ export function SettingsView({
                     aria-expanded={advanced}
                     aria-label={
                       advanced
-                        ? 'Hide advanced settings'
-                        : 'Show advanced settings'
+                        ? t('Hide advanced settings')
+                        : t('Show advanced settings')
                     }
-                    title={advanced ? 'Hide advanced settings' : 'Show advanced settings'}
+                    title={advanced ? t('Hide advanced settings') : t('Show advanced settings')}
                     onClick={() => setAdvanced((current) => !current)}
                   >
                     <span
@@ -822,7 +831,7 @@ export function SettingsView({
                     <div className="settings-field-grid">
                       <label className="settings-field">
                         <span className="settings-field-label">
-                          {mode === 'local' ? 'API port' : 'Remote API port'}
+                          {mode === 'local' ? t('API port') : t('Remote API port')}
                         </span>
                         <input
                           type="number"
@@ -842,7 +851,7 @@ export function SettingsView({
                       {mode === 'ssh' ? (
                         <label className="settings-field">
                           <span className="settings-field-label">
-                            Local tunnel port
+                            {t('Local tunnel port')}
                           </span>
                           <input
                             type="number"
@@ -866,22 +875,22 @@ export function SettingsView({
                       {mode === 'local' ? (
                         <>
                           <div className="settings-fact">
-                            <span>Direct connection</span>
+                            <span>{t('Direct connection')}</span>
                             <code>{directUrl}</code>
                           </div>
                           <div className="settings-fact">
-                            <span>Tunnel</span>
-                            <code>none — Hermes is on this machine</code>
+                            <span>{t('Tunnel')}</span>
+                            <code>{t('none — Hermes is on this machine')}</code>
                           </div>
                         </>
                       ) : (
                         <>
                           <div className="settings-fact">
-                            <span>Local tunnel</span>
+                            <span>{t('Local tunnel')}</span>
                             <code>{tunnelUrl}</code>
                           </div>
                           <div className="settings-fact">
-                            <span>SSH command</span>
+                            <span>{t('SSH command')}</span>
                             <code>{tunnelCommand}</code>
                           </div>
                         </>
@@ -890,18 +899,18 @@ export function SettingsView({
 
                     <div className="settings-switch-row">
                       <span className="settings-switch-copy">
-                        Connect on launch
+                        {t('Connect on launch')}
                         <em>
                           {mode === 'local'
-                            ? 'Reach Hermes as soon as Hermes Bot starts.'
-                            : 'Open the tunnel as soon as Hermes Bot starts.'}
+                            ? t('Reach Hermes as soon as Hermes Bot starts.')
+                            : t('Open the tunnel as soon as Hermes Bot starts.')}
                         </em>
                       </span>
                       <button
                         type="button"
                         role="switch"
                         aria-checked={autoConnect}
-                        aria-label="Connect on launch"
+                        aria-label={t('Connect on launch')}
                         className={`settings-switch ${
                           autoConnect ? 'is-on' : ''
                         }`}
@@ -928,13 +937,13 @@ export function SettingsView({
                           setAutoConnect(false);
                           setError('');
                           setHelp(null);
-                          setNotice('Advanced settings reset — save to apply.');
+                          setNotice(t('Advanced settings reset — save to apply.'));
                         }}
                       >
-                        Reset to defaults
+                        {t('Reset to defaults')}
                       </button>
                       <span className="settings-hint">
-                        The server key lives in <code>~/.hermes/.env</code>.
+                        {t('The server key lives in')} <code>~/.hermes/.env</code>.
                       </span>
                     </div>
                   </div>
@@ -961,7 +970,7 @@ export function SettingsView({
                     disabled={!canTest}
                     onClick={handleTest}
                   >
-                    {busy === 'test' ? 'Testing…' : 'Test connection'}
+                    {busy === 'test' ? t('Testing…') : t('Test connection')}
                   </button>
                   <button
                     type="button"
@@ -971,13 +980,13 @@ export function SettingsView({
                   >
                     {busy === 'save'
                       ? mode === 'local'
-                        ? 'Scanning…'
-                        : 'Connecting…'
+                        ? t('Scanning…')
+                        : t('Connecting…')
                       : mode === 'local'
-                        ? 'Scan & connect'
+                        ? t('Scan & connect')
                         : status.state === 'connected'
-                          ? 'Save & reconnect'
-                          : 'Save & connect'}
+                          ? t('Save & reconnect')
+                          : t('Save & connect')}
                   </button>
                 </div>
               </div>
@@ -986,25 +995,23 @@ export function SettingsView({
             <div className="settings-page">
               <header className="settings-page-head">
                 <div>
-                  <h2>Setup</h2>
-                  <p>Walk through the door again, step by step.</p>
+                  <h2>{t('Setup')}</h2>
+                  <p>{t('Walk through the door again, step by step.')}</p>
                 </div>
               </header>
               <section className="settings-card">
                 <header className="settings-card-head">
                   <div>
-                    <h3>The guided setup</h3>
+                    <h3>{t('The guided setup')}</h3>
                     <p>
-                      The host, the key, the handshake, the crew — one question
-                      at a time.
+                      {t('The host, the key, the handshake, the crew — one question at a time.')}
                     </p>
                   </div>
                 </header>
 
                 <div className="settings-card-body">
                   <p className="settings-hint">
-                    Nothing is changed until you say so: the setup writes down
-                    the host and the key, and the rest it only reads.
+                    {t('Nothing is changed until you say so: the setup writes down the host and the key, and the rest it only reads.')}
                   </p>
                   <div className="settings-page-buttons">
                     <button
@@ -1012,7 +1019,7 @@ export function SettingsView({
                       className="settings-action is-primary"
                       onClick={onRunSetup}
                     >
-                      Run the setup again
+                      {t('Run the setup again')}
                     </button>
                   </div>
                 </div>
@@ -1020,6 +1027,56 @@ export function SettingsView({
             </div>
           ) : section === 'updates' ? (
             <UpdatesSettings />
+          ) : section === 'language' ? (
+            <div className="settings-page">
+              <header className="settings-page-head">
+                <div>
+                  <h2>{t('Language')}</h2>
+                  <p>
+                    {t(
+                      'The language of this window. Conversations, bot names and what Hermes keeps are left as they are.',
+                    )}
+                  </p>
+                </div>
+              </header>
+              <p className="settings-notice">
+                {t(
+                  'Personal Simplified Chinese edition. This is not an official build of the upstream project. The macOS menu follows this choice. A system permission prompt is bilingual, because macOS reads it from the app itself.',
+                )}
+              </p>
+              <section className="settings-card">
+                <div className="settings-form">
+                  <fieldset className="settings-modes">
+                    <legend className="settings-field-label">
+                      {t('Interface language')}
+                    </legend>
+                    {(
+                      [
+                        ['zh-CN', '简体中文'],
+                        ['en', 'English'],
+                      ] as const
+                    ).map(([id, name]) => (
+                      <label className="settings-mode" key={id}>
+                        <input
+                          type="radio"
+                          name="hermes-locale"
+                          value={id}
+                          checked={locale === id}
+                          onChange={() => {
+                            setLocale(id);
+                            setLocaleState(id);
+                            void window.hermes?.setLocale?.(id);
+                          }}
+                        />
+                        <span className="settings-mode-copy">
+                          <strong>{name}</strong>
+                        </span>
+                      </label>
+                    ))}
+                  </fieldset>
+                </div>
+              </section>
+            </div>
           ) : section === 'phone' ? (
             <PhonePairing />
           ) : section === 'schedules' ? (

@@ -8,6 +8,7 @@
  */
 
 import type { PendingApproval } from './data';
+import { t } from './i18n';
 
 export type ApprovalChoice = 'once' | 'session' | 'always' | 'deny';
 
@@ -88,7 +89,7 @@ export function readApproval(
 }
 
 export function approvalLabel(choice: ApprovalChoice): string {
-  return LABELS[choice];
+  return t(LABELS[choice]);
 }
 
 /** Put a held command in the list, replacing any earlier frame of the same one. */

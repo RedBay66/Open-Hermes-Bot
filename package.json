@@ -82,7 +82,7 @@
         }
       ],
       "extendInfo": {
-        "NSMicrophoneUsageDescription": "Hermes Bot listens only while you are dictating, and the words are transcribed by your own Hermes host — nothing is sent anywhere else."
+        "NSMicrophoneUsageDescription": "Hermes Bot 只在你听写时使用麦克风，转写由你自己的 Hermes 主机完成，不会发到别处。Hermes Bot listens only while you are dictating, and the words are transcribed by your own Hermes host — nothing is sent anywhere else."
       }
     },
     "dmg": {

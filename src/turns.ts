@@ -2,6 +2,7 @@
 // is out of quota, and what to do when the server is still installing.
 
 import type { Message } from './data';
+import { t } from './i18n';
 
 /** A model that said "not for you" because the quota is spent. */
 const QUOTA_ERROR = /usage limit|quota|rate limit|too many requests|429|exhausted/i;
@@ -19,10 +20,13 @@ export type ChatOutcome = { ok: boolean; error?: string; canceled?: boolean };
  */
 export function elapsedLabel(ms: number): string {
   const seconds = Math.max(0, Math.floor(ms / 1000));
-  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 60) return t('{count}s', { count: seconds });
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
-  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
+  if (minutes < 60) return t('{count} min', { count: minutes });
+  return t('{hours} h {minutes}', {
+    hours: Math.floor(minutes / 60),
+    minutes: String(minutes % 60).padStart(2, '0'),
+  });
 }
 
 /**
@@ -45,7 +49,8 @@ const TOOL_WORDS: Record<string, string> = {
 };
 
 export function toolWords(tool: string): string {
-  return TOOL_WORDS[tool] ?? tool;
+  const known = TOOL_WORDS[tool];
+  return known ? t(known) : tool;
 }
 
 /** How much of a tool's own words the waiting line can hold. */
@@ -87,10 +92,10 @@ export function waitingLabel(turn: {
   effort?: string;
   writing?: boolean;
 }): string {
-  if (turn.watching) return 'Watching the host…';
-  if (turn.tool) return `Using ${toolWords(turn.tool)}…`;
-  if (turn.writing) return 'Writing';
-  return turn.effort === 'off' ? 'Writing' : 'Thinking';
+  if (turn.watching) return t('Watching the host…');
+  if (turn.tool) return t('Using {tool}…', { tool: toolWords(turn.tool) });
+  if (turn.writing) return t('Writing');
+  return turn.effort === 'off' ? t('Writing') : t('Thinking');
 }
 
 /** Is the model out of quota? */

@@ -1,5 +1,6 @@
 import type { Connector } from '../connectors';
 import { ConnectorMark } from './ConnectorMark';
+import { t } from '../i18n';
 
 /**
  * The services the empty dock previews, with their real marks. No plug:
@@ -65,10 +66,10 @@ export function ConnectorDock({
       type="button"
       className="footer-dock"
       onClick={onOpen}
-      aria-label="Connectors"
-      title="Connectors"
+      aria-label={t('Connectors')}
+      title={t('Connectors')}
     >
-      <span className="dock-label">Apps</span>
+      <span className="dock-label">{t('Apps')}</span>
       <span className="dock-marks">
         {(rows.length ? rows : PREVIEW_ROWS).map((row) => (
           <ConnectorMark key={row.slug} row={row} className="dock-mark" />

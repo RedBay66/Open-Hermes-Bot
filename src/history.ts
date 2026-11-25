@@ -9,6 +9,7 @@
 // whose profile holds it, folded, searched and dated.
 
 import type { SingleAvatar, Thread } from './data';
+import { t } from './i18n';
 import { parseGroupSessionTitle } from './conversations';
 import { profileKey } from './modelPrefs';
 import { avatarColor } from './profileColor';
@@ -72,7 +73,7 @@ const MONTHS = [
 
 /** The title as it is read: a session with none is not a blank row. */
 export function pastTitle(session: PastSession): string {
-  return session.title.trim() || UNTITLED;
+  return session.title.trim() || t(UNTITLED);
 }
 
 /**
@@ -81,19 +82,25 @@ export function pastTitle(session: PastSession): string {
  */
 export function relativeDay(now: number, lastActive: number): string {
   const elapsed = Math.max(0, now - lastActive);
-  if (elapsed < MINUTE) return 'now';
-  if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)} m`;
-  if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)} h`;
-  if (elapsed < WEEK) return `${Math.floor(elapsed / DAY)} d`;
-  if (elapsed < 5 * WEEK) return `${Math.floor(elapsed / WEEK)} w`;
+  if (elapsed < MINUTE) return t('now');
+  if (elapsed < HOUR) return t('{count} m', { count: Math.floor(elapsed / MINUTE) });
+  if (elapsed < DAY) return t('{count} h', { count: Math.floor(elapsed / HOUR) });
+  if (elapsed < WEEK) return t('{count} d', { count: Math.floor(elapsed / DAY) });
+  if (elapsed < 5 * WEEK) return t('{count} w', { count: Math.floor(elapsed / WEEK) });
   const day = new Date(lastActive);
-  return `${day.getDate()} ${MONTHS[day.getMonth()]}`;
+  return t('{day} {month}', {
+    day: day.getDate(),
+    month: t(MONTHS[day.getMonth()]),
+  });
 }
 
 /** The day a conversation started, spelled out, for the notice it carries. */
 export function shortDay(at: number): string {
   const day = new Date(at);
-  return `${day.getDate()} ${MONTHS[day.getMonth()]}`;
+  return t('{day} {month}', {
+    day: day.getDate(),
+    month: t(MONTHS[day.getMonth()]),
+  });
 }
 
 /**

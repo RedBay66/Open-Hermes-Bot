@@ -233,7 +233,7 @@ describe('what a tapback opens', () => {
         onClose={() => undefined}
       />,
     );
-    expect(screen.getByText('Bob et Alice ont réagi')).toBeTruthy();
+    expect(screen.getByText('Bob and Alice reacted')).toBeTruthy();
     expect(screen.getByText('👍')).toBeTruthy();
   });
 
@@ -246,7 +246,7 @@ describe('what a tapback opens', () => {
         onClose={() => undefined}
       />,
     );
-    expect(screen.getByText('Bob a réagi')).toBeTruthy();
+    expect(screen.getByText('Bob reacted')).toBeTruthy();
   });
 
   it('says it when nobody is named', () => {
@@ -258,7 +258,7 @@ describe('what a tapback opens', () => {
         onClose={() => undefined}
       />,
     );
-    expect(screen.getByText('Un bot a réagi')).toBeTruthy();
+    expect(screen.getByText('A bot reacted')).toBeTruthy();
   });
 });
 

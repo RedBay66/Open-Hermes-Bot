@@ -6,6 +6,7 @@ import { AgentAvatar } from './AgentAvatar';
 import { AnimatedBloub } from './AnimatedBloub';
 import { BLOUB_COLOR_OPTIONS } from './Bloub';
 import { ColorGrid, ShapeGrid } from './LogoControls';
+import { localize, t } from '../i18n';
 
 export type CreateCandidate = {
   id: string;
@@ -141,7 +142,7 @@ export function CreateAgentDialog({
       setError(
         reason instanceof Error && reason.message
           ? reason.message
-          : 'Could not create the bot.',
+          : t('Could not create the bot.'),
       );
     } finally {
       setBusy(false);
@@ -165,20 +166,20 @@ export function CreateAgentDialog({
         <div className={`modal-body ${mode === 'group' ? 'is-group' : ''}`}>
           <div className="modal-head">
             <div>
-              <h2 id="create-title">New agent</h2>
-              <p>Create a bot, or bring a few together.</p>
+              <h2 id="create-title">{t('New agent')}</h2>
+              <p>{t('Create a bot, or bring a few together.')}</p>
             </div>
             <button
               type="button"
               className="modal-close"
-              aria-label="Close"
+              aria-label={t('Close')}
               onClick={onClose}
             >
               ×
             </button>
           </div>
 
-          <div className="mode-switch" role="tablist" aria-label="Agent type">
+          <div className="mode-switch" role="tablist" aria-label={t('Agent type')}>
             <button
               type="button"
               role="tab"
@@ -186,7 +187,7 @@ export function CreateAgentDialog({
               className={mode === 'bot' ? 'is-active' : ''}
               onClick={() => setMode('bot')}
             >
-              Bot
+              {t('Bot')}
             </button>
             <button
               type="button"
@@ -195,7 +196,7 @@ export function CreateAgentDialog({
               className={mode === 'group' ? 'is-active' : ''}
               onClick={() => setMode('group')}
             >
-              Group
+              {t('Group')}
             </button>
           </div>
 
@@ -208,7 +209,7 @@ export function CreateAgentDialog({
           </div>
 
           <label className="field">
-            <span>{mode === 'bot' ? 'Bot name' : 'Group name'}</span>
+            <span>{mode === 'bot' ? t('Bot name') : t('Group name')}</span>
             <input
               ref={nameRef}
               type="text"
@@ -217,7 +218,7 @@ export function CreateAgentDialog({
               spellCheck={false}
               disabled={busy}
               placeholder={
-                mode === 'bot' ? 'e.g. Research assistant' : 'e.g. Launch crew'
+                mode === 'bot' ? t('e.g. Research assistant') : t('e.g. Launch crew')
               }
               onChange={(event) => {
                 setName(event.target.value);
@@ -229,21 +230,21 @@ export function CreateAgentDialog({
           {mode === 'bot' ? (
             <p className="create-hint">
               {profileId
-                ? `Creates the Hermes profile “${profileId}” on the connected machine.`
-                : 'A bot lives as a Hermes profile on the connected machine.'}
+                ? t('Creates the Hermes profile “{profileId}” on the connected machine.', { profileId: profileId })
+                : t('A bot lives as a Hermes profile on the connected machine.')}
             </p>
           ) : null}
 
-          {error ? <p className="create-error">{error}</p> : null}
+          {error ? <p className="create-error">{localize(error)}</p> : null}
 
           {mode === 'bot' ? (
             <>
               <div className="create-section">
-                <span className="create-label">Shape</span>
+                <span className="create-label">{t('Shape')}</span>
                 <ShapeGrid value={shape} color={color} onChange={setShape} />
               </div>
               <div className="create-section">
-                <span className="create-label">Color</span>
+                <span className="create-label">{t('Color')}</span>
                 <ColorGrid
                   value={color}
                   onChange={(next) => {
@@ -253,12 +254,11 @@ export function CreateAgentDialog({
                 />
                 {colorTouched ? (
                   <p className="create-hint">
-                    This is the colour Hermes will show for {name.trim() || 'this bot'}.
+                    {t('This is the colour Hermes will show for')} {name.trim() || t('this bot')}.
                   </p>
                 ) : (
                   <p className="create-hint">
-                    Hermes' own colour for {profileId || 'this name'} — pick one
-                    to override it.
+                    {t('Hermes\' own colour for')} {profileId || t('this name')} {t('— pick one to override it.')}
                   </p>
                 )}
               </div>
@@ -266,9 +266,9 @@ export function CreateAgentDialog({
           ) : (
             <div className="create-section">
               <div className="create-label-row">
-                <span className="create-label">Bots</span>
+                <span className="create-label">{t('Bots')}</span>
                 <span className="create-count">
-                  {selected.length} selected
+                  {selected.length} {t('selected')}
                 </span>
               </div>
               <div className="member-picker">
@@ -297,14 +297,12 @@ export function CreateAgentDialog({
                 })}
                 {candidates.length < 2 ? (
                   <p className="create-hint">
-                    Create at least two bots before building a group.
+                    {t('Create at least two bots before building a group.')}
                   </p>
                 ) : null}
               </div>
               <p className="create-hint">
-                Pick at least two bots. Every member decides on its own whether
-                to answer or stay silent, and can @ another member to hand over
-                the floor.
+                {t('Pick at least two bots. Every member decides on its own whether to answer or stay silent, and can @ another member to hand over the floor.')}
               </p>
             </div>
           )}
@@ -312,7 +310,7 @@ export function CreateAgentDialog({
 
         <div className="modal-actions">
           <button type="button" className="button-ghost" onClick={onClose}>
-            {busy ? 'Close' : 'Cancel'}
+            {busy ? t('Close') : t('Cancel')}
           </button>
           <button
             type="submit"
@@ -320,10 +318,10 @@ export function CreateAgentDialog({
             disabled={!canCreate || busy}
           >
             {busy
-              ? 'Creating bot…'
+              ? t('Creating bot…')
               : mode === 'bot'
-                ? 'Create bot'
-                : 'Create group'}
+                ? t('Create bot')
+                : t('Create group')}
           </button>
         </div>
       </form>

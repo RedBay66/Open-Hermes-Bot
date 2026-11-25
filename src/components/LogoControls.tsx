@@ -1,4 +1,5 @@
 import type { BloubShape } from './bloubFrames';
+import { t } from '../i18n';
 import {
   BLOUB_COLOR_OPTIONS,
   BLOUB_SHAPE_OPTIONS,
@@ -19,15 +20,15 @@ export function ShapeGrid({ value, color, onChange }: ShapeGridProps) {
           key={option.id}
           type="button"
           className={`shape-option ${value === option.id ? 'is-active' : ''}`}
-          aria-label={option.label}
+          aria-label={t(option.label)}
           aria-pressed={value === option.id}
-          title={option.label}
+          title={t(option.label)}
           onClick={() => onChange(option.id)}
         >
           <span className="shape-option-art">
             <BloubSvg color={color} shape={option.id} />
           </span>
-          <span className="shape-option-label">{option.label}</span>
+          <span className="shape-option-label">{t(option.label)}</span>
         </button>
       ))}
     </div>
@@ -48,9 +49,9 @@ export function ColorGrid({ value, onChange }: ColorGridProps) {
           type="button"
           className={`color-option ${value === color.hex ? 'is-active' : ''}`}
           style={{ background: color.hex }}
-          aria-label={color.name}
+          aria-label={t(color.name)}
           aria-pressed={value === color.hex}
-          title={color.name}
+          title={t(color.name)}
           onClick={() => onChange(color.hex)}
         />
       ))}
