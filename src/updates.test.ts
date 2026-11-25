@@ -87,6 +87,18 @@ describe('what the page says about an update', () => {
     );
   });
 
+  it('says a personal edition will not install the release it found', () => {
+    expect(
+      updateDetail({
+        ...initialUpdateStatus(),
+        state: 'available',
+        version: '1.1.0',
+        message:
+          'This personal Simplified Chinese edition does not download or install upstream releases, because an official update would replace the translation.',
+      }),
+    ).toMatch(/does not download or install/);
+  });
+
   it('says which version it found', () => {
     expect(
       updateDetail({
@@ -346,6 +358,16 @@ describe('the words the small place says', () => {
     expect(updateMarkWords({ ...initialUpdateStatus(), state: 'checking' })).toBe(
       'Looking for an update…',
     );
+  });
+
+  it('says a found upstream release will not be installed', () => {
+    expect(
+      updateMarkWords({
+        ...initialUpdateStatus(),
+        state: 'available',
+        message: 'held',
+      }),
+    ).toBe('Upstream update found. This edition will not install it.');
   });
 
   it('says when a version was seen or is being carried in', () => {

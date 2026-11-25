@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { HermesPairing } from '../hermes';
+import { localize, t } from '../i18n';
 
 /**
  * The phone's door, opened from here.
@@ -27,7 +28,7 @@ export function PhonePairing() {
       setError(
         failure instanceof Error && failure.message
           ? failure.message
-          : 'The host did not answer.',
+          : t('The host did not answer.'),
       );
       setPairing(null);
     } finally {
@@ -45,11 +46,9 @@ export function PhonePairing() {
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Phone</h2>
+          <h2>{t('Phone')}</h2>
           <p>
-            The same bots and conversations, from the Hermes Bot app on your
-            phone. The phone never holds a Hermes key: it opens the bridge, and
-            the bridge reads the keys here, on the host.
+            {t('The same bots and conversations, from the Hermes Bot app on your phone. The phone never holds a Hermes key: it opens the bridge, and the bridge reads the keys here, on the host.')}
           </p>
         </div>
       </header>
@@ -57,32 +56,30 @@ export function PhonePairing() {
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>Pair a phone</h3>
+            <h3>{t('Pair a phone')}</h3>
             <p>
-              The code is minted on the host, where the bridge runs. It works
-              once, and for twenty minutes.
+              {t('The code is minted on the host, where the bridge runs. It works once, and for twenty minutes.')}
             </p>
           </div>
           {pairing?.ok && pairing.expiresIn ? (
             <span className="settings-card-meta">
-              {Math.round(pairing.expiresIn / 60)} minutes
+              {Math.round(pairing.expiresIn / 60)} {t('minutes')}
             </span>
           ) : null}
         </header>
 
-        {error ? <p className="settings-notice">{error}</p> : null}
+        {error ? <p className="settings-notice">{localize(error)}</p> : null}
 
         {!pairing || !pairing.ok ? (
           <div className="settings-form">
             {pairing?.error ? (
-              <p className="settings-notice">{pairing.error}</p>
+              <p className="settings-notice">{localize(pairing.error)}</p>
             ) : null}
             {pairing?.hint ? (
-              <p className="settings-field-note">{pairing.hint}</p>
+              <p className="settings-field-note">{localize(pairing.hint)}</p>
             ) : null}
             <p className="settings-field-note">
-              On the phone: Tailscale on, the Hermes Bot app open, then
-              Settings → Connection → Scan the code.
+              {t('On the phone: Tailscale on, the Hermes Bot app open, then Settings → Connection → Scan the code.')}
             </p>
             <div className="settings-field-actions">
               <button
@@ -92,10 +89,10 @@ export function PhonePairing() {
                 onClick={() => void mint()}
               >
                 {busy
-                  ? 'Minting…'
+                  ? t('Minting…')
                   : pairing?.error
-                    ? 'Try again'
-                    : 'Mint a code'}
+                    ? t('Try again')
+                    : t('Mint a code')}
               </button>
             </div>
           </div>
@@ -105,7 +102,7 @@ export function PhonePairing() {
               {pairing.qr ? (
                 <img
                   src={pairing.qr}
-                  alt={`Pairing code ${pairing.code ?? ''}`}
+                  alt={t('Pairing code {p0}', { p0: pairing.code ?? '' })}
                   width={220}
                   height={220}
                 />
@@ -116,32 +113,28 @@ export function PhonePairing() {
 
             <div className="phone-pairing-copy">
               <p className="phone-pairing-lead">
-                Scan this from the phone: Settings → Connection → Scan the
-                code.
+                {t('Scan this from the phone: Settings → Connection → Scan the code.')}
               </p>
               <p className="phone-pairing-code">{pairing.code}</p>
               <p className="settings-field-note">{pairing.url}</p>
               <p className="settings-field-note">
-                Minted on {pairing.label ?? 'the host'}. The code works once,
-                and can be revoked from the phone's Connection page afterwards.
+                {t('Minted on')} {pairing.label ?? t('the host')}{t('. The code works once, and can be revoked from the phone\'s Connection page afterwards.')}
               </p>
 
               {pairing.published === false ? (
                 <p className="settings-notice">
-                  Tailscale is not publishing the bridge yet. On{' '}
-                  {pairing.label ?? 'the host'}:{' '}
+                  {t('Tailscale is not publishing the bridge yet. On')}{' '}
+                  {pairing.label ?? t('the host')}:{' '}
                   <code>
-                    sudo tailscale serve --bg --https=443
-                    http://127.0.0.1:8765
+                    {t('sudo tailscale serve --bg --https=443 http://127.0.0.1:8765')}
                   </code>
                 </p>
               ) : null}
 
               {pairing.bridge === false ? (
                 <p className="settings-notice">
-                  The bridge is not answering on{' '}
-                  {pairing.label ?? 'the host'}. Start it, then mint a code
-                  again.
+                  {t('The bridge is not answering on')}{' '}
+                  {pairing.label ?? t('the host')}{t('. Start it, then mint a code again.')}
                 </p>
               ) : null}
 
@@ -151,7 +144,7 @@ export function PhonePairing() {
                   className="settings-text-button"
                   onClick={() => void copyLink()}
                 >
-                  {copied ? 'Copied' : 'Copy the link'}
+                  {copied ? t('Copied') : t('Copy the link')}
                 </button>
                 <button
                   type="button"
@@ -159,7 +152,7 @@ export function PhonePairing() {
                   disabled={busy}
                   onClick={() => void mint()}
                 >
-                  {busy ? 'Minting…' : 'Another code'}
+                  {busy ? t('Minting…') : t('Another code')}
                 </button>
               </div>
             </div>

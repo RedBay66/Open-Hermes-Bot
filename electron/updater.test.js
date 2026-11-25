@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 // The updater is a CommonJS module, because the shell that uses it runs in
 // the Electron main process. The test loads it the way Node does.
 const require = createRequire(import.meta.url);
-const { createUpdater, UNSUPPORTED_MESSAGE } = require('./updater.js');
+const { createUpdater, UNSUPPORTED_MESSAGE, UPSTREAM_HOLD_MESSAGE } = require('./updater.js');
 
 function fakeApp({ packaged = true, version = '1.0.0' } = {}) {
   return { isPackaged: packaged, getVersion: () => version };
@@ -27,6 +27,7 @@ function harness(options = {}) {
     app,
     autoUpdater,
     onEvent: (event) => events.push(event),
+    holdUpstream: options.holdUpstream,
   });
   return { app, autoUpdater, events, updater };
 }
@@ -39,7 +40,12 @@ function tick() {
 describe('what the app knows about itself', () => {
   it('says the version it is running', () => {
     const { updater } = harness({ app: { version: '1.2.3' } });
-    expect(updater.info()).toEqual({ version: '1.2.3', supported: true });
+    expect(updater.info()).toEqual({
+      version: '1.2.3',
+      supported: true,
+      upstreamInstall: true,
+      edition: '',
+    });
   });
 
   it('says it cannot look when it is not installed', () => {
@@ -400,5 +406,60 @@ describe('the new version taking over', () => {
     autoUpdater.emit('update-downloaded', { version: '1.1.0' });
     await check;
     expect(updater.isReady()).toBe(true);
+  });
+});
+
+describe('a personal edition that must not replace itself', () => {
+  it('says so, and does not download the release it found', async () => {
+    const { updater, autoUpdater, events } = harness({ holdUpstream: true });
+    const check = updater.check();
+    autoUpdater.emit('update-available', {
+      version: '9.0.0',
+      releaseDate: '2026-11-01T00:00:00.000Z',
+    });
+    expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+    expect(await check).toEqual({
+      ok: true,
+      state: 'available',
+      version: '9.0.0',
+      message: UPSTREAM_HOLD_MESSAGE,
+    });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        state: 'available',
+        version: '9.0.0',
+        message: UPSTREAM_HOLD_MESSAGE,
+        released: '2026-11-01T00:00:00.000Z',
+      }),
+    );
+    expect(updater.info()).toEqual({
+      version: '1.0.0',
+      supported: true,
+      upstreamInstall: false,
+      edition: 'personal-zh-CN',
+    });
+  });
+
+  it('does not install, even if a download is already on the disk', async () => {
+    const { updater, autoUpdater } = harness({ holdUpstream: true });
+    autoUpdater.emit('update-downloaded', { version: '9.0.0' });
+    expect(updater.install()).toBe(false);
+    expect(updater.installOnQuit()).toBe(false);
+    expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  it('looks quietly on launch and still does not download', async () => {
+    const { updater, autoUpdater, events } = harness({ holdUpstream: true });
+    updater.checkInBackground();
+    autoUpdater.emit('update-available', { version: '9.0.0' });
+    await tick();
+    expect(autoUpdater.downloadUpdate).not.toHaveBeenCalled();
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        state: 'available',
+        quiet: true,
+        message: UPSTREAM_HOLD_MESSAGE,
+      }),
+    );
   });
 });

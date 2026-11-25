@@ -13,8 +13,9 @@
   --text-2: #909096;
   --text-3: #6f6f76;
   --focus-ring: rgba(255, 255, 255, 0.22);
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter',
-    'Helvetica Neue', Arial, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC',
+    'Hiragino Sans GB', 'Noto Sans SC', 'Noto Sans CJK SC',
+    'WenQuanYi Micro Hei', 'Inter', 'Helvetica Neue', Arial, sans-serif;
 }
 
 *,
@@ -3745,6 +3746,11 @@ mark.find-hit.is-current {
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+}
+
+html[lang='zh-CN'] .settings-nav-group {
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 /* A second group of pages starts lower: the first one is the top of the

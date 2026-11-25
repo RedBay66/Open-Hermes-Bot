@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AvatarSpec, BotStyle } from '../data';
 import { AgentAvatar } from './AgentAvatar';
 import { ColorGrid, ShapeGrid } from './LogoControls';
+import { t } from '../i18n';
 
 type LogoEditorProps = {
   avatar: AvatarSpec;
@@ -32,15 +33,15 @@ export function LogoEditor({ avatar, onChange, onClose }: LogoEditorProps) {
   }
 
   return (
-    <div className="logo-popover" role="dialog" aria-label="Edit logo">
+    <div className="logo-popover" role="dialog" aria-label={t('Edit logo')}>
       <div className="logo-popover-head">
         <span>
-          {isGroup ? `Group logo · ${members.length} bots` : 'Bot logo'}
+          {isGroup ? t('Group logo · {length} bots', { length: members.length }) : t('Bot logo')}
         </span>
         <button
           type="button"
           className="logo-popover-close"
-          aria-label="Close logo editor"
+          aria-label={t('Close logo editor')}
           onClick={onClose}
         >
           ×
@@ -54,8 +55,8 @@ export function LogoEditor({ avatar, onChange, onClose }: LogoEditorProps) {
               key={index}
               type="button"
               className={`logo-member ${index === activeMember ? 'is-active' : ''}`}
-              aria-label={`Style member ${index + 1}`}
-              title={`Member ${index + 1}`}
+              aria-label={t('Style member {p0}', { p0: index + 1 })}
+              title={t('Member {p0}', { p0: index + 1 })}
               aria-pressed={index === activeMember}
               onClick={() => setMemberIndex(index)}
             >
@@ -74,7 +75,7 @@ export function LogoEditor({ avatar, onChange, onClose }: LogoEditorProps) {
       ) : null}
 
       <div className="logo-section">
-        <span className="logo-label">Shape</span>
+        <span className="logo-label">{t('Shape')}</span>
         <ShapeGrid
           value={current.shape}
           color={current.color}
@@ -83,7 +84,7 @@ export function LogoEditor({ avatar, onChange, onClose }: LogoEditorProps) {
       </div>
 
       <div className="logo-section">
-        <span className="logo-label">Color</span>
+        <span className="logo-label">{t('Color')}</span>
         <ColorGrid
           value={current.color}
           onChange={(color) => apply({ color })}

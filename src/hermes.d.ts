@@ -354,6 +354,13 @@ export type HermesUpdateInfo = {
   version: string;
   /** Whether the app has a way of finding the next one. */
   supported: boolean;
+  /**
+   * False on the personal Chinese edition: a release may be seen, and it is
+   * not installed, because the official build would replace the translation.
+   */
+  upstreamInstall?: boolean;
+  /** `personal-zh-CN` on this edition, empty on a build that still updates itself. */
+  edition?: string;
 };
 
 /** What the shell says happened while looking for an update. */
@@ -740,6 +747,12 @@ export type HermesBridge = {
   onStatus: (callback: (status: HermesStatus) => void) => () => void;
   /** The version the app is running, and whether it can find the next one. */
   updateInfo: () => Promise<HermesUpdateInfo>;
+  /** The language the window was opened in. Synchronous, so the first paint matches. */
+  getLocale?: () => 'zh-CN' | 'en';
+  /** Remembers the language and rebuilds the macOS menu. */
+  setLocale?: (locale: 'zh-CN' | 'en') => Promise<'zh-CN' | 'en'>;
+  /** The Settings item in the macOS menu. */
+  onMenuSettings?: (callback: () => void) => () => void;
   /** Looks for an update, and downloads it if there is one. */
   checkForUpdates: () => Promise<HermesUpdateResult>;
   /** Where the look stands right now, for the mark that opens on it. */

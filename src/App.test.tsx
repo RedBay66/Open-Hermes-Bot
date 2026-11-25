@@ -503,9 +503,9 @@ describe('the conversation', () => {
     await renderApp(bridge);
     await userEvent.click(screen.getByText('Bob'));
     await waitFor(() => expect(bridge.messages).toHaveBeenCalled());
-    const pill = await screen.findByLabelText('Bob a réagi 👍');
+    const pill = await screen.findByLabelText('Bob reacted 👍');
     await userEvent.click(pill);
-    expect(await screen.findByText('Réactions')).toBeTruthy();
+    expect(await screen.findByText('Reactions')).toBeTruthy();
   });
 
   it('picks the model the person chose', async () => {

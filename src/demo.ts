@@ -528,6 +528,12 @@ export function createDemoBridge(now: number = Date.now()): HermesBridge {
     runJob: async () => ({ ok: true, job: { id: 'demo-morning' } }),
     toggleSkill: async () => ({ ok: true }),
     toggleToolset: async () => ({ ok: true }),
+    updateInfo: async () => ({
+      version: '1.3.0',
+      supported: true,
+      upstreamInstall: false,
+      edition: 'personal-zh-CN',
+    }),
     updateState: async () => ({ ok: true, state: 'idle' as const }),
     checkForUpdates: async () => ({ ok: true }),
     installUpdate: async () => ({ ok: true }),

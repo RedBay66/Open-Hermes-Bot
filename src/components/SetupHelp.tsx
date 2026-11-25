@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Help } from '../setupHelp';
+import { t } from '../i18n';
 
 /**
  * What a failed read or a quiet port means, said in the page's own voice.
@@ -36,7 +37,7 @@ export function SetupHelp({ help }: { help: Help }) {
       {help.after ? <p className="setup-help-line">{help.after}</p> : null}
       {help.details ? (
         <details className="setup-help-details">
-          <summary>Details</summary>
+          <summary>{t('Details')}</summary>
           <pre className="setup-help-output">
             <code>{help.details}</code>
           </pre>

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import type { HermesConnectorList } from '../hermes';
 import { missingEnv, readConnectors, type Connector } from '../connectors';
 import { ConnectorMark } from './ConnectorMark';
+import { localize, t } from '../i18n';
 
 /** Where a connector stands, in one word. */
 const STATE_WORD: Record<Connector['state'], string> = {
@@ -56,7 +57,7 @@ export function ConnectorsSettings() {
     const reader = bridge?.connectors;
     if (!reader) {
       setLoading(false);
-      setError('The connectors are only available inside the desktop app.');
+      setError(t('The connectors are only available inside the desktop app.'));
       return;
     }
     let cancelled = false;
@@ -68,7 +69,7 @@ export function ConnectorsSettings() {
       if (cancelled) return;
       setLoading(false);
       setTimedOut(true);
-      setError('The host took too long to answer.');
+      setError(t('The host took too long to answer.'));
     }, READING_DEADLINE_MS);
     reader({ fresh: reload.fresh })
       .then((next: HermesConnectorList) => {
@@ -79,7 +80,7 @@ export function ConnectorsSettings() {
       .catch((reason: Error) => {
         if (cancelled) return;
         setError(
-          reason instanceof Error ? reason.message : 'The host did not answer.',
+          reason instanceof Error ? reason.message : t('The host did not answer.'),
         );
       })
       .finally(() => {
@@ -138,25 +139,25 @@ export function ConnectorsSettings() {
     try {
       const result = await bridge.connectConnector({ slug: row.slug });
       if (!result.ok) {
-        setError(result.error ?? 'The connection could not be started.');
+        setError(result.error ?? t('The connection could not be started.'));
         return;
       }
       const url = result.url ?? '';
       if (!url) {
-        setNotice(`${row.name} is waiting for the page to open.`);
+        setNotice(t('{name} is waiting for the page to open.', { name: row.name }));
         return;
       }
       const opened = await bridge.openLink?.(url);
       setNotice(
         opened?.ok
-          ? `${row.name} is waiting for you in the browser.`
-          : `${row.name} could not be opened in the browser.`,
+          ? t('{name} is waiting for you in the browser.', { name: row.name })
+          : t('{name} could not be opened in the browser.', { name: row.name }),
       );
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'The connection could not be started.',
+          : t('The connection could not be started.'),
       );
     } finally {
       setBusy('');
@@ -173,7 +174,7 @@ export function ConnectorsSettings() {
    */
   async function connectLocal(row: Connector, values: Record<string, string> = {}) {
     if (!bridge?.mcpConnect || !bridge?.mcpConnectStatus) {
-      setError('Connecting a service needs the desktop app.');
+      setError(t('Connecting a service needs the desktop app.'));
       return;
     }
     setBusy(row.slug);
@@ -189,13 +190,13 @@ export function ConnectorsSettings() {
       });
       setAsking('');
       if (!started.ok) {
-        setError(started.error ?? 'The connection could not be started.');
+        setError(started.error ?? t('The connection could not be started.'));
         return;
       }
       setNotice(
         started.url
-          ? `${row.name} is waiting for you in the browser.`
-          : `${row.name} is being installed on the host.`,
+          ? t('{name} is waiting for you in the browser.', { name: row.name })
+          : t('{name} is being installed on the host.', { name: row.name }),
       );
       const deadline = Date.now() + APPROVAL_WINDOW_MS;
       for (;;) {
@@ -203,17 +204,17 @@ export function ConnectorsSettings() {
         const state = await bridge.mcpConnectStatus({ name: row.slug });
         if (state.done) {
           if (!state.ok) {
-            setError(state.error ?? 'The authorization did not complete.');
+            setError(state.error ?? t('The authorization did not complete.'));
             return;
           }
           // The read comes after the word, so the page says what happened
           // while it asks the host again.
           retry();
-          setNotice(`${row.name} is connected.`);
+          setNotice(t('{name} is connected.', { name: row.name }));
           return;
         }
         if (Date.now() > deadline) {
-          setError('The approval did not come. Try again when you are ready.');
+          setError(t('The approval did not come. Try again when you are ready.'));
           return;
         }
       }
@@ -221,7 +222,7 @@ export function ConnectorsSettings() {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'The connection could not be started.',
+          : t('The connection could not be started.'),
       );
     } finally {
       setBusy('');
@@ -242,7 +243,7 @@ export function ConnectorsSettings() {
   /** Sign in with Nous without the terminal: the page opens, approval lands. */
   async function signInWithNous(): Promise<boolean> {
     if (!bridge?.nousLoginStart || !bridge?.nousLoginPoll) {
-      setError('Sign-in needs the desktop app.');
+      setError(t('Sign-in needs the desktop app.'));
       return false;
     }
     setLoginBusy(true);
@@ -253,7 +254,7 @@ export function ConnectorsSettings() {
     try {
       const start = await bridge.nousLoginStart();
       if (!start.ok) {
-        setError(start.error ?? 'The sign-in could not start.');
+        setError(start.error ?? t('The sign-in could not start.'));
         return false;
       }
       deviceCode = String(start.device_code ?? '');
@@ -264,11 +265,11 @@ export function ConnectorsSettings() {
       setLoginUrl(String(start.url ?? ''));
       setLoginCode(String(start.user_code ?? ''));
       if (start.url) await bridge.openLink?.(start.url);
-      setNotice('Approve the sign-in in the browser, then come back.');
+      setNotice(t('Approve the sign-in in the browser, then come back.'));
       const deadline = Date.now() + Number(start.expires_in ?? 600) * 1000;
       for (;;) {
         if (Date.now() > deadline) {
-          setError('The sign-in expired. Start again.');
+          setError(t('The sign-in expired. Start again.'));
           return false;
         }
         await new Promise((resolve) => setTimeout(resolve, intervalMs));
@@ -276,18 +277,18 @@ export function ConnectorsSettings() {
         if (poll.ok) {
           setLoginUrl('');
           setLoginCode('');
-          setNotice('Signed in. Reading the services…');
+          setNotice(t('Signed in. Reading the services…'));
           retry();
           return true;
         }
         if (!poll.pending) {
-          setError(poll.error ?? 'The sign-in failed.');
+          setError(poll.error ?? t('The sign-in failed.'));
           return false;
         }
       }
     } catch (reason) {
       setError(
-        reason instanceof Error ? reason.message : 'The sign-in failed.',
+        reason instanceof Error ? reason.message : t('The sign-in failed.'),
       );
       return false;
     } finally {
@@ -296,23 +297,22 @@ export function ConnectorsSettings() {
   }
 
   const statusWord = loading
-    ? 'Reading the host…'
+    ? t('Reading the host…')
     : failed || timedOut
-      ? 'Host down'
+      ? t('Host down')
       : needsAuth
-        ? 'Sign-in to connect'
+        ? t('Sign-in to connect')
         : connected.length
-          ? `${connected.length} connected`
-          : 'None connected';
+          ? t('{count} connected', { count: connected.length })
+          : t('None connected');
 
   return (
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Connectors</h2>
+          <h2>{t('Connectors')}</h2>
           <p>
-            The services your bots can reach besides Hermes. They live on the
-            host, and they are connected from there.
+            {t('The services your bots can reach besides Hermes. They live on the host, and they are connected from there.')}
           </p>
         </div>
         <div className="settings-page-side">
@@ -320,13 +320,13 @@ export function ConnectorsSettings() {
         </div>
       </header>
 
-      {error ? <p className="models-error">{error}</p> : null}
-      {notice ? <p className="settings-hint">{notice}</p> : null}
+      {error ? <p className="models-error">{localize(error)}</p> : null}
+      {notice ? <p className="settings-hint">{localize(notice)}</p> : null}
 
       {loading && !answer ? (
         <div className="connectors-loading" role="status">
           <span className="connectors-spinner" aria-hidden="true" />
-          <p className="connectors-loading-word">Reading the host…</p>
+          <p className="connectors-loading-word">{t('Reading the host…')}</p>
         </div>
       ) : null}
 
@@ -334,16 +334,15 @@ export function ConnectorsSettings() {
         <section className="settings-card">
           <header className="settings-card-head">
             <div>
-              <h3>The host did not answer</h3>
+              <h3>{t('The host did not answer')}</h3>
               <p>
-                The connection to Hermes is up, but the question about the
-                services never came back.
+                {t('The connection to Hermes is up, but the question about the services never came back.')}
               </p>
             </div>
           </header>
           <div className="settings-card-body">
             <p className="settings-hint">
-              Check that Hermes is still running on the host, then try again.
+              {t('Check that Hermes is still running on the host, then try again.')}
             </p>
             <div className="connectors-actions">
               <button
@@ -351,7 +350,7 @@ export function ConnectorsSettings() {
                 className="settings-action is-small"
                 onClick={retry}
               >
-                Try again
+                {t('Try again')}
               </button>
             </div>
           </div>
@@ -362,10 +361,9 @@ export function ConnectorsSettings() {
         <section className="settings-card">
           <header className="settings-card-head">
             <div>
-              <h3>Sign in to connect</h3>
+              <h3>{t('Sign in to connect')}</h3>
               <p>
-                Browse freely — one approval when you connect your first
-                service, then everything opens.
+                {t('Browse freely — one approval when you connect your first service, then everything opens.')}
               </p>
             </div>
           </header>
@@ -376,8 +374,7 @@ export function ConnectorsSettings() {
                   {loginCode}
                 </p>
                 <p className="settings-hint">
-                  Approve it in the browser, then come back. This page keeps
-                  waiting.
+                  {t('Approve it in the browser, then come back. This page keeps waiting.')}
                 </p>
               </>
             ) : null}
@@ -390,11 +387,11 @@ export function ConnectorsSettings() {
               >
                 {loginBusy
                   ? loginUrl
-                    ? 'Waiting for approval…'
-                    : 'Opening…'
+                    ? t('Waiting for approval…')
+                    : t('Opening…')
                   : error
-                    ? 'Start again'
-                    : 'Sign in with Nous'}
+                    ? t('Start again')
+                    : t('Sign in with Nous')}
               </button>
               {loginUrl && loginBusy ? (
                 <button
@@ -402,13 +399,13 @@ export function ConnectorsSettings() {
                   className="settings-text-button"
                   onClick={() => void bridge?.openLink?.(loginUrl)}
                 >
-                  Open the browser again
+                  {t('Open the browser again')}
                 </button>
               ) : null}
             </div>
             {closed.length ? (
               <details className="settings-details">
-                <summary>Why am I seeing this?</summary>
+                <summary>{t('Why am I seeing this?')}</summary>
                 {closed.map((message) => (
                   <p className="settings-hint" key={message}>
                     {message}
@@ -424,8 +421,8 @@ export function ConnectorsSettings() {
         <section className="settings-card">
           <header className="settings-card-head">
             <div>
-              <h3>Nothing to connect</h3>
-              <p>The host did not offer a single service.</p>
+              <h3>{t('Nothing to connect')}</h3>
+              <p>{t('The host did not offer a single service.')}</p>
             </div>
           </header>
           <div className="settings-card-body">
@@ -435,7 +432,7 @@ export function ConnectorsSettings() {
                 className="settings-text-button"
                 onClick={retry}
               >
-                Refresh
+                {t('Refresh')}
               </button>
             </div>
           </div>
@@ -446,15 +443,15 @@ export function ConnectorsSettings() {
         <section className="settings-card">
           <header className="settings-card-head">
             <div>
-              <h3>The services</h3>
-              <p>{rows.length} on offer.</p>
+              <h3>{t('The services')}</h3>
+              <p>{rows.length} {t('on offer.')}</p>
             </div>
             <button
               type="button"
               className="settings-text-button"
               onClick={retry}
             >
-              Refresh
+              {t('Refresh')}
             </button>
           </header>
           <div className="capability-list">
@@ -479,7 +476,7 @@ export function ConnectorsSettings() {
                       ) : null}
                     </span>
                     <span className={`capability-state is-${row.state}`}>
-                      {STATE_WORD[row.state]}
+                      {t(STATE_WORD[row.state])}
                     </span>
                     {open || row.state === 'connected' ? null : row.mcp &&
                       busy === row.slug ? (
@@ -490,7 +487,7 @@ export function ConnectorsSettings() {
                           void bridge?.mcpConnectCancel?.({ name: row.slug })
                         }
                       >
-                        Cancel
+                        {t('Cancel')}
                       </button>
                     ) : (
                       <button
@@ -507,15 +504,22 @@ export function ConnectorsSettings() {
                           void connect(row);
                         }}
                       >
-                        {busy === row.slug ? 'Opening…' : 'Connect'}
+                        {busy === row.slug ? t('Opening…') : t('Connect')}
                       </button>
                     )}
                   </div>
                   {open ? (
                     <div className="connector-env">
                       <p className="settings-hint">
-                        {row.name} needs {needed.length === 1 ? 'a value' : `${needed.length} values`} on the host
-                        before it can connect.
+                        {needed.length === 1
+                          ? t(
+                              '{name} needs a value on the host before it can connect.',
+                              { name: row.name },
+                            )
+                          : t(
+                              '{name} needs {count} values on the host before it can connect.',
+                              { name: row.name, count: needed.length },
+                            )}
                       </p>
                       {needed.map((field) => (
                         <label className="settings-field" key={field.name}>
@@ -544,7 +548,7 @@ export function ConnectorsSettings() {
                           disabled={incomplete || busy === row.slug}
                           onClick={() => void connectLocal(row, draft)}
                         >
-                          {busy === row.slug ? 'Connecting…' : 'Connect'}
+                          {busy === row.slug ? t('Connecting…') : t('Connect')}
                         </button>
                         <button
                           type="button"
@@ -554,7 +558,7 @@ export function ConnectorsSettings() {
                             setDraft({});
                           }}
                         >
-                          Cancel
+                          {t('Cancel')}
                         </button>
                       </div>
                     </div>
@@ -566,7 +570,7 @@ export function ConnectorsSettings() {
           {closed.length > 0 && !failed ? (
             <div className="settings-card-body">
               <details className="settings-details">
-                <summary>Some details from the host</summary>
+                <summary>{t('Some details from the host')}</summary>
                 {closed.map((message) => (
                   <p className="settings-hint" key={message}>
                     {message}

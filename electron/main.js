@@ -9,6 +9,7 @@ const {
   Menu,
   Notification,
   clipboard,
+  dialog,
   shell,
   ipcMain,
 } = require('electron');
@@ -19,6 +20,8 @@ const { spawn, spawnSync, execFileSync } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const QRCode = require('qrcode');
 const { createUpdater } = require('./updater');
+const { createLocaleStore } = require('./locale.js');
+const { aboutCopy, menuTemplate } = require('./menu.js');
 const pairingRules = require('./pairing.js');
 const {
   apiBaseUrl,
@@ -53,6 +56,14 @@ const { modelRef } = require('./models.js');
 
 app.setName('Hermes Bot');
 
+// The language is an app record, read before the window exists so the menu
+// and the Chromium locale agree with it. Simplified Chinese is the default.
+const locales = createLocaleStore({
+  userData: () => app.getPath('userData'),
+});
+let windowLocale = locales.read();
+app.commandLine.appendSwitch('lang', windowLocale);
+
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 
 // The app finds its own next version on the releases page, the way every
@@ -63,6 +74,9 @@ const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 const updater = createUpdater({
   app,
   autoUpdater,
+  // Official releases are the English app. Downloading one would replace
+  // this personal Chinese edition, so a found release is shown and not taken.
+  holdUpstream: true,
   onEvent: (event) => {
     for (const window of BrowserWindow.getAllWindows()) {
       window.webContents.send('hermes:update:event', event);
@@ -4520,14 +4534,37 @@ function createWindow() {
   }
 }
 
+ipcMain.on('hermes:locale:get', (event) => {
+  event.returnValue = windowLocale;
+});
+
+ipcMain.handle('hermes:locale:set', (_event, locale) => {
+  windowLocale = locales.write(locale === 'en' ? 'en' : 'zh-CN');
+  buildMenu();
+  return windowLocale;
+});
+
 function buildMenu() {
   Menu.setApplicationMenu(
-    Menu.buildFromTemplate([
-      { role: 'appMenu' },
-      { role: 'editMenu' },
-      { role: 'viewMenu' },
-      { role: 'windowMenu' },
-    ]),
+    Menu.buildFromTemplate(
+      menuTemplate(windowLocale, {
+        openSettings: () => {
+          for (const window of BrowserWindow.getAllWindows()) {
+            window.webContents.send('hermes:menu:settings');
+          }
+        },
+        showAbout: () => {
+          const zh = windowLocale === 'zh-CN';
+          dialog.showMessageBox({
+            type: 'info',
+            title: zh ? '关于 Hermes Bot' : 'About Hermes Bot',
+            message: 'Hermes Bot',
+            detail: aboutCopy(windowLocale),
+            buttons: [zh ? '好' : 'OK'],
+          });
+        },
+      }),
+    ),
   );
 }
 

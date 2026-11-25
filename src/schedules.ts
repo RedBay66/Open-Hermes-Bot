@@ -11,6 +11,7 @@
 // not ticking.
 
 import type { HermesJob } from './hermes';
+import { t } from './i18n';
 
 /** Where a schedule stands, as the page reads it. */
 export type ScheduleState =
@@ -173,18 +174,18 @@ export function distance(at: number, now: number): string {
   if (!at) return '';
   const delta = at - now;
   const size = Math.abs(delta);
-  if (size < 45_000) return 'now';
+  if (size < 45_000) return t('now');
   const ahead = delta > 0;
   const minutes = Math.round(size / 60_000);
-  let span = `${minutes} min`;
-  if (minutes >= 1440) span = `${Math.round(minutes / 1440)} d`;
-  else if (minutes >= 60) span = `${Math.round(minutes / 60)} h`;
-  return ahead ? `in ${span}` : `${span} ago`;
+  let span = t('{count} min', { count: minutes });
+  if (minutes >= 1440) span = t('{count} d', { count: Math.round(minutes / 1440) });
+  else if (minutes >= 60) span = t('{count} h', { count: Math.round(minutes / 60) });
+  return ahead ? t('in {span}', { span }) : t('{span} ago', { span });
 }
 
 /** When a schedule runs next, as the row says it. */
 export function nextRunText(schedule: Schedule, now: number): string {
-  if (schedule.state === 'paused') return 'paused';
+  if (schedule.state === 'paused') return t('paused');
   if (!schedule.nextRun) return '';
   return distance(schedule.nextRun, now);
 }
@@ -197,22 +198,25 @@ export function nextRunText(schedule: Schedule, now: number): string {
  * to make visible.
  */
 export function lastRunText(schedule: Schedule, now: number): string {
-  if (!schedule.lastRun) return 'never run';
+  if (!schedule.lastRun) return t('never run');
   const when = distance(schedule.lastRun, now);
   const status = schedule.lastStatus.toLowerCase();
   if (status === 'error' || status === 'failed') {
     return schedule.lastError
-      ? `failed ${when}: ${schedule.lastError}`
-      : `failed ${when}`;
+      ? t('failed {when}: {error}', { when, error: schedule.lastError })
+      : t('failed {when}', { when });
   }
   // The work was done and the result went nowhere: Hermes keeps that apart
   // from a failed run, and so does the row. Saying "ran" here would be a
   // half-truth the person cannot see through.
   if (schedule.lastDeliveryError) {
-    return `ran ${when}, but the delivery failed: ${schedule.lastDeliveryError}`;
+    return t('ran {when}, but the delivery failed: {error}', {
+      when,
+      error: schedule.lastDeliveryError,
+    });
   }
   // The date is there: the early return above took the case of no run.
-  return `ran ${when}`;
+  return t('ran {when}', { when });
 }
 
 /** What a person typed into the form, before it becomes a schedule. */
@@ -233,17 +237,17 @@ export type ScheduleDraft = {
  */
 export function draftProblem(draft: ScheduleDraft): string {
   const name = word(draft.name);
-  if (!name) return 'A schedule needs a name.';
-  if (name.length > 200) return 'The name is longer than 200 characters.';
+  if (!name) return t('A schedule needs a name.');
+  if (name.length > 200) return t('The name is longer than 200 characters.');
   if (!word(draft.when)) {
-    return 'A schedule needs a time: an expression, an interval, or a date.';
+    return t('A schedule needs a time: an expression, an interval, or a date.');
   }
   if (word(draft.prompt).length > 5000) {
-    return 'What it should do is longer than 5000 characters.';
+    return t('What it should do is longer than 5000 characters.');
   }
   const repeat = word(draft.repeat);
   if (repeat && !/^\d+$/.test(repeat)) {
-    return 'Repeat is a whole number of runs, 1 or more.';
+    return t('Repeat is a whole number of runs, 1 or more.');
   }
   return '';
 }
@@ -322,7 +326,7 @@ export function runsByJob(
     const at = Number(session?.lastActive);
     (runs[job] ??= []).push({
       id,
-      title: word(session?.title) || 'A run',
+      title: word(session?.title) || t('A run'),
       at: Number.isFinite(at) ? at : 0,
       messages: Number(session?.messageCount) || 0,
     });
@@ -336,12 +340,14 @@ export function runsByJob(
 /** Where the result of a run goes, in the page's words. */
 export function deliverText(deliver: string): string {
   const where = word(deliver).toLowerCase();
-  if (!where || where === 'local') return 'kept on the host';
+  if (!where || where === 'local') return t('kept on the host');
   if (where.startsWith('bot-chat:')) {
     const bot = deliver.slice('bot-chat:'.length).trim();
-    return bot ? `handed to ${bot}'s chat` : 'handed to a chat';
+    return bot
+      ? t("handed to {bot}'s chat", { bot })
+      : t('handed to a chat');
   }
-  return `delivered to ${deliver}`;
+  return t('delivered to {where}', { where: deliver });
 }
 
 /**
@@ -441,8 +447,13 @@ export function schedulerStanding(
     late,
     text:
       late === 1
-        ? 'One schedule was due and did not run: the gateway answers, but its scheduler is not ticking. Nothing fires while it is stopped.'
-        : `${late} schedules were due and did not run: the gateway answers, but its scheduler is not ticking. Nothing fires while it is stopped.`,
+        ? t(
+            'One schedule was due and did not run: the gateway answers, but its scheduler is not ticking. Nothing fires while it is stopped.',
+          )
+        : t(
+            '{count} schedules were due and did not run: the gateway answers, but its scheduler is not ticking. Nothing fires while it is stopped.',
+            { count: late },
+          ),
   };
 }
 
@@ -450,6 +461,6 @@ export function schedulerStanding(
 export function emptyText(profile: string): string {
   const who = word(profile);
   return who
-    ? `The host holds no schedule for ${who} yet.`
-    : 'The host holds no schedule for the default bot yet.';
+    ? t('The host holds no schedule for {who} yet.', { who })
+    : t('The host holds no schedule for the default bot yet.');
 }

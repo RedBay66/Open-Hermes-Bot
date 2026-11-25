@@ -3,6 +3,7 @@ import type { AvatarSpec, BotStyle, Thread } from '../data';
 import { AgentAvatar } from './AgentAvatar';
 import { AnimatedBloub } from './AnimatedBloub';
 import { ColorGrid, ShapeGrid } from './LogoControls';
+import { t } from '../i18n';
 
 type EditAgentDialogProps = {
   thread: Thread;
@@ -80,18 +81,18 @@ export function EditAgentDialog({
           <div className="modal-head">
             <div>
               <h2 id="edit-agent-title">
-                {isGroup ? 'Edit group' : 'Edit bot'}
+                {isGroup ? t('Edit group') : t('Edit bot')}
               </h2>
               <p>
                 {nameLocked
-                  ? 'Its name is fixed — update its logo.'
-                  : 'Update its name and logo.'}
+                  ? t('Its name is fixed — update its logo.')
+                  : t('Update its name and logo.')}
               </p>
             </div>
             <button
               type="button"
               className="modal-close"
-              aria-label="Close"
+              aria-label={t('Close')}
               onClick={onClose}
             >
               ×
@@ -111,7 +112,7 @@ export function EditAgentDialog({
           </div>
 
           <label className="field">
-            <span>{isGroup ? 'Group name' : 'Bot name'}</span>
+            <span>{isGroup ? t('Group name') : t('Bot name')}</span>
             <input
               ref={nameRef}
               type="text"
@@ -126,23 +127,23 @@ export function EditAgentDialog({
           {avatar.kind === 'group' && current ? (
             <div className="create-section edit-member-section">
               <div className="create-label-row">
-                <span className="create-label">Member logo</span>
+                <span className="create-label">{t('Member logo')}</span>
                 <span className="create-count">
                   {activeMember + 1} / {members.length}
                 </span>
               </div>
               <div
                 className="logo-members edit-member-tabs"
-                aria-label="Group members"
+                aria-label={t('Group members')}
               >
                 {members.map((member, index) => (
                   <button
                     key={index}
                     type="button"
                     className={`logo-member ${index === activeMember ? 'is-active' : ''}`}
-                    aria-label={`Edit member ${index + 1}`}
+                    aria-label={t('Edit member {p0}', { p0: index + 1 })}
                     aria-pressed={index === activeMember}
-                    title={`Member ${index + 1}`}
+                    title={t('Member {p0}', { p0: index + 1 })}
                     onClick={() => setMemberIndex(index)}
                   >
                     <AgentAvatar
@@ -163,7 +164,7 @@ export function EditAgentDialog({
           {current ? (
             <>
               <div className="create-section">
-                <span className="create-label">Shape</span>
+                <span className="create-label">{t('Shape')}</span>
                 <ShapeGrid
                   value={current.shape}
                   color={current.color}
@@ -171,7 +172,7 @@ export function EditAgentDialog({
                 />
               </div>
               <div className="create-section">
-                <span className="create-label">Color</span>
+                <span className="create-label">{t('Color')}</span>
                 <ColorGrid
                   value={current.color}
                   onChange={(color) => apply({ color })}
@@ -183,14 +184,14 @@ export function EditAgentDialog({
 
         <div className="modal-actions">
           <button type="button" className="button-ghost" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button
             type="submit"
             className="button-primary"
             disabled={!name.trim()}
           >
-            Save changes
+            {t('Save changes')}
           </button>
         </div>
       </form>

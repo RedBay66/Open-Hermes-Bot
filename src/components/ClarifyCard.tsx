@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { canAnswer, clarifyAnswer, type ClarifyRequest } from '../clarify';
+import { localize, t } from '../i18n';
 
 type Props = {
   clarify: ClarifyRequest;
@@ -28,21 +29,21 @@ export function ClarifyCard({ clarify, botName, onRespond }: Props) {
     setError('');
     const result = await onRespond(clarifyAnswer(value));
     if (!result?.ok) {
-      setError(result?.error || 'The host did not take that answer.');
+      setError(result?.error || t('The host did not take that answer.'));
       setBusy('');
     }
   };
 
   return (
-    <section className="clarify-card" aria-label="A question from the bot">
+    <section className="clarify-card" aria-label={t('A question from the bot')}>
       <div className="clarify-head">
         <span className="clarify-mark" aria-hidden="true">
           ?
         </span>
         <div className="clarify-title">
-          <strong>{botName ? `${botName} is asking` : 'The bot is asking'}</strong>
+          <strong>{botName ? t('{botName} is asking', { botName: botName }) : t('The bot is asking')}</strong>
           <span className="clarify-sub">
-            The turn is waiting for this answer.
+            {t('The turn is waiting for this answer.')}
           </span>
         </div>
       </div>
@@ -76,8 +77,8 @@ export function ClarifyCard({ clarify, botName, onRespond }: Props) {
           className="clarify-input"
           value={draft}
           spellCheck={false}
-          placeholder={clarify.choices.length ? 'Or type an answer' : 'Your answer'}
-          aria-label="Your answer"
+          placeholder={clarify.choices.length ? t('Or type an answer') : t('Your answer')}
+          aria-label={t('Your answer')}
           disabled={Boolean(busy)}
           onChange={(event) => setDraft(event.target.value)}
         />
@@ -86,13 +87,13 @@ export function ClarifyCard({ clarify, botName, onRespond }: Props) {
           className="clarify-send"
           disabled={!canAnswer(draft) || Boolean(busy)}
         >
-          Send
+          {t('Send')}
         </button>
       </form>
 
       {error ? (
         <p className="clarify-error" role="status">
-          {error}
+          {localize(error)}
         </p>
       ) : null}
     </section>

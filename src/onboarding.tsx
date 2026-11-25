@@ -9,6 +9,7 @@ import { avatarColor, profileColor } from './profileColor';
 import type { MoodId } from './moods';
 import { describeFailure, keyFailureHelp, type Help } from './setupHelp';
 import { SetupHelp } from './components/SetupHelp';
+import { localize, t } from './i18n';
 
 /** What a read of the key answers, whether the bridge answered or threw. */
 type ImportedKey = Awaited<ReturnType<HermesBridge['importKey']>>;
@@ -111,8 +112,8 @@ function scanSilence(message: string | undefined, port: string) {
     message === 'Nothing is listening on that port' ||
     message === 'No answer on the local port';
   return nothing
-    ? `No Hermes answered on 127.0.0.1:${port}. Is it running?`
-    : (message ?? 'The host did not answer.');
+    ? t('No Hermes answered on 127.0.0.1:{port}. Is it running?', { port })
+    : localize(message || '') || t('The host did not answer.');
 }
 
 type CheckState = 'waiting' | 'working' | 'done' | 'failed';
@@ -325,7 +326,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
           message:
             reason instanceof Error && reason.message
               ? reason.message
-              : 'The host did not answer.',
+              : t('The host did not answer.'),
         };
       }
 
@@ -334,7 +335,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
         setError(
           at === 'local'
             ? scanSilence(result.message, String(apiPort || '8642'))
-            : (result.message ?? 'The host did not answer.'),
+            : (result.message ?? t('The host did not answer.')),
         );
         // A key in hand and nothing on the port is the API server being off:
         // that has an answer, and the page gives it.
@@ -381,7 +382,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
 
       if (!saved?.ok) {
         setChecks((current) => markCheck(current, 'link', 'failed'));
-        setError(saved?.error ?? 'The connection could not be saved.');
+        setError(saved?.error ?? t('The connection could not be saved.'));
         setFailed(true);
         setBusy('none');
         return;
@@ -397,7 +398,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
 
       if (status?.state !== 'connected') {
         setChecks((current) => markCheck(current, 'link', 'failed'));
-        setError(status?.message ?? 'The tunnel did not open.');
+        setError(status?.message ?? t('The tunnel did not open.'));
         setFailed(true);
         setBusy('none');
         return;
@@ -440,12 +441,12 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
         setNoticeWarn(false);
         setNotice(
           at === 'local'
-            ? 'Read from this Mac, and kept in the Keychain.'
-            : `Read from ${where}, and kept in the Keychain.`,
+            ? t('Read from this Mac, and kept in the Keychain.')
+            : t('Read from {where}, and kept in the Keychain.', { where }),
         );
         return true;
       }
-      setError(result.error ?? 'The key could not be read from the server.');
+      setError(result.error ?? t('The key could not be read from the server.'));
       // The read knows which nothing it found: the page turns that into the
       // two lines that make a key, instead of repeating the shell.
       setHelp(
@@ -504,7 +505,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
         // that block is about a key that is missing, and this is the answer
         // to pressing the button that was meant to make one.
         setHelp(null);
-        setError(opened.error ?? 'The key could not be written on the host.');
+        setError(opened.error ?? t('The key could not be written on the host.'));
         setBusy('none');
         return;
       }
@@ -519,7 +520,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
       setError(
         reason instanceof Error && reason.message
           ? reason.message
-          : 'The key could not be written on the host.',
+          : t('The key could not be written on the host.'),
       );
       setBusy('none');
     }
@@ -594,7 +595,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
       } else {
         setNoticeWarn(true);
         setNotice(
-          'Hermes is not serving it yet — it will come up at the next scan of the host.',
+          t('Hermes is not serving it yet — it will come up at the next scan of the host.'),
         );
       }
     });
@@ -682,7 +683,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
       setBusy('none');
       return {
         made: false,
-        error: result.error ?? 'The bot could not be created.',
+        error: result.error ?? t('The bot could not be created.'),
       };
     }
     const name = result.name || toProfileId(title);
@@ -703,7 +704,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
         made: true,
         notice:
           result.error ??
-          'The bot was created, but Hermes has not answered for it yet.',
+          t('The bot was created, but Hermes has not answered for it yet.'),
       };
     }
     // The gateway serves a new profile at its next scan: the bot is made, and
@@ -713,7 +714,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
       setWarming('pending');
       return {
         made: true,
-        notice: 'Hermes is starting this bot — it will answer in a moment.',
+        notice: t('Hermes is starting this bot — it will answer in a moment.'),
       };
     }
     setWarming('ready');
@@ -788,7 +789,9 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
   // machine needs no tunnel: the port is the way in.
   const linkLine =
     mode === 'local'
-      ? `127.0.0.1:${apiPort || '8642'} — no tunnel, no SSH.`
+      ? t('127.0.0.1:{port} — no tunnel, no SSH.', {
+          port: apiPort || '8642',
+        })
       : `ssh -N -L 127.0.0.1:${
           localPort || '18742'
         }:127.0.0.1:${apiPort || '8642'} ${host || '<host>'}`;
@@ -831,21 +834,21 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
 
   const primaryLabel = isLast
     ? busy === 'bot'
-      ? 'Making the bot…'
+      ? t('Making the bot…')
       : connecting
-        ? 'Start talking anyway'
-        : 'Start talking'
+        ? t('Start talking anyway')
+        : t('Start talking')
     : step === 'welcome'
-      ? 'Begin'
+      ? t('Begin')
       : testing
         ? mode === 'local'
           ? failed
-            ? 'Scan again'
-            : 'Scan this Mac'
-          : 'Test the connection'
+            ? t('Scan again')
+            : t('Scan this Mac')
+          : t('Test the connection')
         : step === 'colour' && !madeBot
-          ? 'Make the bot'
-          : 'Continue';
+          ? t('Make the bot')
+          : t('Continue');
 
   async function makeBot(input: {
     shape: BloubShape;
@@ -876,14 +879,14 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
       setFailed(true);
       setChecks(emptyChecks());
       goTo(STEPS.indexOf('setup'));
-      setError('Not connected to Hermes — reconnect to continue.');
+      setError(t('Not connected to Hermes — reconnect to continue.'));
       return false;
     }
     if (!made.made) {
       // Nothing was made: the preview goes with it, back to the colour.
       setMadeBot(null);
       goTo(STEPS.indexOf('colour'));
-      setError(made.error ?? 'The bot could not be created.');
+      setError(made.error ?? t('The bot could not be created.'));
       return false;
     }
     if (made.notice) {
@@ -962,7 +965,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
       </span>
 
       <header className="onboarding-bar">
-        <span className="onboarding-brand">Hermes Bot</span>
+        <span className="onboarding-brand">{t('Hermes Bot')}</span>
         <span className="onboarding-count">
           {stepIndex + 1} <i>/</i> {STEPS.length}
         </span>
@@ -997,17 +1000,24 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
             </div>
           )}
 
-          <p className="onboarding-eyebrow">{scene.eyebrow}</p>
+          <p className="onboarding-eyebrow">{t(scene.eyebrow)}</p>
           <h1 id="onboarding-title" className="onboarding-title">
-            {scene.title}
+            {t(scene.title)}
           </h1>
-          <p className="onboarding-line">{scene.line}</p>
+          <p className="onboarding-line">{t(scene.line)}</p>
+          {step === 'welcome' ? (
+            <p className="onboarding-line">
+              {t(
+                'Personal Simplified Chinese edition, not an official release.',
+              )}
+            </p>
+          ) : null}
 
           {step === 'setup' ? (
             <>
               <fieldset className="onboarding-modes">
                 <legend className="onboarding-field-label">
-                  Where does Hermes run?
+                  {t('Where does Hermes run?')}
                 </legend>
                 <label className="onboarding-mode">
                   <input
@@ -1024,8 +1034,8 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     }}
                   />
                   <span className="onboarding-mode-copy">
-                    <strong>This Mac</strong>
-                    <em>Hermes runs on this machine. No tunnel, no SSH.</em>
+                    <strong>{t('This Mac')}</strong>
+                    <em>{t('Hermes runs on this machine. No tunnel, no SSH.')}</em>
                   </span>
                 </label>
                 <label className="onboarding-mode">
@@ -1041,16 +1051,16 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     }}
                   />
                   <span className="onboarding-mode-copy">
-                    <strong>Another machine</strong>
+                    <strong>{t('Another machine')}</strong>
                     <em>
-                      Hermes runs elsewhere, and the app reaches it over SSH.
+                      {t('Hermes runs elsewhere, and the app reaches it over SSH.')}
                     </em>
                   </span>
                 </label>
               </fieldset>
 
               {mode === 'ssh' && savedHosts === null ? (
-                <p className="onboarding-hosts-hint">Reading the SSH config…</p>
+                <p className="onboarding-hosts-hint">{t('Reading the SSH config…')}</p>
               ) : null}
 
               {mode === 'ssh' && savedHosts !== null && savedHosts.length > 0 ? (
@@ -1067,7 +1077,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     >
                       <span className="onboarding-host-name">{name}</span>
                       <span className="onboarding-host-cue">
-                        {connected && host === name ? 'Connected' : 'Connect'}
+                        {connected && host === name ? t('Connected') : t('Connect')}
                       </span>
                     </button>
                   ))}
@@ -1076,7 +1086,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
 
               {mode === 'ssh' && savedHosts !== null && savedHosts.length === 0 ? (
                 <p className="onboarding-hosts-hint">
-                  No host saved in your SSH config — write it below.
+                  {t('No host saved in your SSH config — write it below.')}
                 </p>
               ) : null}
 
@@ -1086,7 +1096,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     className="onboarding-field-label"
                     htmlFor="setup-host"
                   >
-                    SSH host
+                    {t('SSH host')}
                   </label>
                   <input
                     id="setup-host"
@@ -1094,7 +1104,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     value={host}
                     spellCheck={false}
                     autoComplete="off"
-                    placeholder="hermes-box.local"
+                    placeholder={t('hermes-box.local')}
                     onChange={(event) => {
                       setHost(event.target.value);
                       setError('');
@@ -1117,7 +1127,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     className="onboarding-field-label"
                     htmlFor="setup-key"
                   >
-                    API key
+                    {t('API key')}
                   </label>
                   <input
                     id="setup-key"
@@ -1143,8 +1153,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                 host, in Hermes' own configuration.
               */}
               <p className="onboarding-key-guide">
-                The model is not asked here: its key, or the subscription
-                Hermes signs in with, stays in Hermes, on the host.
+                {t('The model is not asked here: its key, or the subscription Hermes signs in with, stays in Hermes, on the host.')}
               </p>
 
               {mode === 'ssh' ? (
@@ -1156,16 +1165,16 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                     onClick={() => void handleImport()}
                   >
                     {busy === 'import'
-                      ? 'Reading…'
-                      : `Read it from ${host}`}
+                      ? t('Reading…')
+                      : t('Read it from {host}', { host: host })}
                   </button>
                   {hasKey ? (
-                    <span className="onboarding-stamp">In the Keychain</span>
+                    <span className="onboarding-stamp">{t('In the Keychain')}</span>
                   ) : null}
                 </div>
               ) : hasKey ? (
                 <div className="onboarding-actions">
-                  <span className="onboarding-stamp">In the Keychain</span>
+                  <span className="onboarding-stamp">{t('In the Keychain')}</span>
                 </div>
               ) : null}
 
@@ -1176,8 +1185,8 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                 onClick={() => setAdvanced((current) => !current)}
               >
                 {advanced
-                  ? 'Hide the ports'
-                  : 'The ports, if they are not the usual ones'}
+                  ? t('Hide the ports')
+                  : t('The ports, if they are not the usual ones')}
               </button>
 
               {advanced ? (
@@ -1188,7 +1197,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                         className="onboarding-field-label"
                         htmlFor="setup-api-port"
                       >
-                        {mode === 'local' ? 'API port' : 'Remote API port'}
+                        {mode === 'local' ? t('API port') : t('Remote API port')}
                       </label>
                       <input
                         id="setup-api-port"
@@ -1206,7 +1215,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                           className="onboarding-field-label"
                           htmlFor="setup-local-port"
                         >
-                          Local tunnel port
+                          {t('Local tunnel port')}
                         </label>
                         <input
                           id="setup-local-port"
@@ -1235,10 +1244,10 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                       aria-hidden="true"
                     />
                     <span className="onboarding-check-label">
-                      {CHECK_LABELS[mode][check.id] ?? check.id}
+                      {t(CHECK_LABELS[mode][check.id] ?? check.id)}
                     </span>
                     <span className="onboarding-check-detail">
-                      {check.detail ?? ''}
+                      {localize(check.detail ?? '')}
                     </span>
                   </li>
                 ))}
@@ -1248,7 +1257,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                 <div className="onboarding-failure">
                   {help ? <SetupHelp help={help} /> : null}
                   {help ? null : (
-                    <span className="onboarding-error">{error}</span>
+                    <span className="onboarding-error">{localize(error)}</span>
                   )}
                   <div className="onboarding-actions">
                     {/*
@@ -1265,8 +1274,8 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                         onClick={() => void openApi()}
                       >
                         {busy === 'open-api'
-                          ? 'Turning it on…'
-                          : 'Turn the API server on'}
+                          ? t('Turning it on…')
+                          : t('Turn the API server on')}
                       </button>
                     ) : null}
                     <button
@@ -1277,17 +1286,12 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                         void (mode === 'local' ? scanLocal() : runHandshake())
                       }
                     >
-                      Try again
+                      {t('Try again')}
                     </button>
                   </div>
                   {canOpenApi ? (
                     <p className="onboarding-api-hint">
-                      Writes a key into the .env of the Hermes home with
-                      Hermes&apos; own command, has the gateway pick it up, and
-                      reads the key back. A key already there is never
-                      replaced. Hermes takes the key when it restarts, so half
-                      a minute without the messaging bots, and the work it
-                      finishes first, are part of the wait.
+                      {t('Writes a key into the .env of the Hermes home with Hermes\' own command, has the gateway pick it up, and reads the key back. A key already there is never replaced. Hermes takes the key when it restarts, so half a minute without the messaging bots, and the work it finishes first, are part of the wait.')}
                     </p>
                   ) : null}
                 </div>
@@ -1302,7 +1306,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                   className="onboarding-field-label"
                   htmlFor="setup-bot-name"
                 >
-                  Its name
+                  {t('Its name')}
                 </label>
                 <input
                   id="setup-bot-name"
@@ -1310,7 +1314,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                   value={botName}
                   maxLength={64}
                   spellCheck={false}
-                  placeholder="e.g. Research assistant"
+                  placeholder={t('e.g. Research assistant')}
                   onChange={(event) => {
                     setBotName(event.target.value);
                     setError('');
@@ -1323,7 +1327,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                 className="onboarding-link"
                 onClick={() => goTo(STEPS.length - 1)}
               >
-                Not now
+                {t('Not now')}
               </button>
             </>
           ) : null}
@@ -1365,16 +1369,16 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
             <>
               <ul className="onboarding-facts">
                 <li>
-                  <span>Hermes runs</span>
-                  <strong>{mode === 'local' ? 'on this Mac' : `on ${host}`}</strong>
+                  <span>{t('Hermes runs')}</span>
+                  <strong>{mode === 'local' ? t('on this Mac') : t('on {host}', { host: host })}</strong>
                 </li>
                 <li>
-                  <span>Key</span>
-                  <strong>in the Keychain</strong>
+                  <span>{t('Key')}</span>
+                  <strong>{t('in the Keychain')}</strong>
                 </li>
                 {madeBot ? (
                   <li>
-                    <span>First bot</span>
+                    <span>{t('First bot')}</span>
                     <strong>{madeBot.title}</strong>
                   </li>
                 ) : null}
@@ -1383,7 +1387,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
           ) : null}
 
           {error && step !== 'setup' ? (
-            <p className="onboarding-error is-alone">{error}</p>
+            <p className="onboarding-error is-alone">{localize(error)}</p>
           ) : null}
           {notice ? (
             <p
@@ -1391,7 +1395,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
                 noticeWarn ? 'onboarding-notice is-warning' : 'onboarding-notice'
               }
             >
-              {notice}
+              {localize(notice)}
             </p>
           ) : null}
         </div>
@@ -1405,7 +1409,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
               className="onboarding-button is-quiet"
               onClick={() => void handleDismiss()}
             >
-              Skip
+              {t('Skip')}
             </button>
           ) : (
             <button
@@ -1414,12 +1418,12 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
               disabled={busy !== 'none'}
               onClick={() => goTo(stepIndex - 1)}
             >
-              Back
+              {t('Back')}
             </button>
           )}
         </div>
 
-        <nav className="onboarding-dots" aria-label="Setup steps">
+        <nav className="onboarding-dots" aria-label={t('Setup steps')}>
           {STEPS.map((entry, index) => (
             <button
               key={entry}
@@ -1427,7 +1431,7 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
               className={`onboarding-dot ${
                 index === stepIndex ? 'is-current' : ''
               } ${index < stepIndex ? 'is-done' : ''}`}
-              aria-label={SCENES[entry].eyebrow}
+              aria-label={t(SCENES[entry].eyebrow)}
               aria-current={index === stepIndex ? 'step' : undefined}
               disabled={index > stepIndex}
               onClick={() => goTo(index)}
@@ -1447,8 +1451,8 @@ export function Onboarding({ onFinish, onDismiss }: OnboardingProps) {
             >
               {busy === 'handshake'
                 ? mode === 'local'
-                  ? 'Scanning…'
-                  : 'Connecting…'
+                  ? t('Scanning…')
+                  : t('Connecting…')
                 : primaryLabel}
             </button>
           )}

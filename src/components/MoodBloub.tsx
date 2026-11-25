@@ -14,6 +14,7 @@ import {
 } from '../moods';
 import { BLOUB_FRAMES, type BloubShape } from './bloubFrames';
 import { EYE_PAPER } from './Bloub';
+import { t } from '../i18n';
 
 /**
  * The one that walks a theatre.
@@ -137,7 +138,7 @@ export function MoodBloub({
       data-mood={played}
       data-face={worn}
       aria-hidden={interactive ? undefined : true}
-      aria-label={interactive ? 'Change its face' : undefined}
+      aria-label={interactive ? t('Change its face') : undefined}
       onClick={interactive ? swapFace : undefined}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}

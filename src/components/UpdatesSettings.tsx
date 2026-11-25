@@ -18,6 +18,7 @@ import {
   type ReleaseRow,
   type UpdateStatus,
 } from '../updates';
+import { localize, t } from '../i18n';
 
 const UNSUPPORTED_MESSAGE =
   'Updates are found by the installed app, not by a copy running from the sources.';
@@ -26,21 +27,21 @@ const UNSUPPORTED_MESSAGE =
 function stateMeta(status: UpdateStatus): string {
   switch (status.state) {
     case 'idle':
-      return 'Not checked yet';
+      return t('Not checked yet');
     case 'checking':
-      return 'Looking';
+      return t('Looking');
     case 'available':
-      return 'Found';
+      return t('Found');
     case 'downloading':
       return `${status.percent}%`;
     case 'ready':
-      return 'Ready';
+      return t('Ready');
     case 'current':
-      return 'Up to date';
+      return t('Up to date');
     case 'unsupported':
-      return 'Not here';
+      return t('Not here');
     case 'error':
-      return 'Failed';
+      return t('Failed');
   }
 }
 
@@ -104,7 +105,7 @@ export function UpdatesSettings() {
           message:
             next?.ok === false
               ? next.message ||
-                'GitHub did not say. The app still looks for its next version.'
+                t('GitHub did not say. The app still looks for its next version.')
               : '',
         });
       })
@@ -113,7 +114,7 @@ export function UpdatesSettings() {
         setBook({
           ...EMPTY_HISTORY,
           loaded: true,
-          message: 'GitHub did not answer. The app still looks for its next version.',
+          message: t('GitHub did not answer. The app still looks for its next version.'),
         });
       });
     return () => {
@@ -213,29 +214,36 @@ export function UpdatesSettings() {
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Updates</h2>
+          <h2>{t('Updates')}</h2>
           <p>
-            Hermes Bot reads its next version on GitHub, and becomes it on its
-            own: the download runs here, and the restart too.
+            {t(
+              'Hermes Bot can see upstream releases on GitHub. This personal edition does not become them, because an official update would replace the translation.',
+            )}
           </p>
         </div>
         <div className="settings-page-side">
           <span className="settings-card-meta">
-            {info ? `Version ${info.version}` : 'Version —'}
+            {info ? t('Version {version}', { version: info.version }) : t('Version —')}
           </span>
         </div>
       </header>
 
+      <p className="settings-notice">
+        {t(
+          'Personal Simplified Chinese edition. This is not an official build of the upstream project. Official updates are not downloaded or installed, because they would replace this translation. You can still open the releases page.',
+        )}
+      </p>
+
       {bridge ? null : (
         <p className="settings-notice">
-          Updates are only available inside the desktop app.
+          {t('Updates are only available inside the desktop app.')}
         </p>
       )}
 
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>Now</h3>
+            <h3>{t('Now')}</h3>
             <p>{updateDetail(status)}</p>
           </div>
           <span className="settings-card-meta">{stateMeta(status)}</span>
@@ -246,7 +254,7 @@ export function UpdatesSettings() {
             <div
               className="update-meter"
               role="progressbar"
-              aria-label="Downloading the update"
+              aria-label={t('Downloading the update')}
               aria-valuenow={status.percent}
               aria-valuemin={0}
               aria-valuemax={100}
@@ -271,8 +279,10 @@ export function UpdatesSettings() {
 
           <p className="settings-hint">
             {busy
-              ? 'The app restarts itself when the download is done.'
-              : 'The app also looks when it opens, and takes the update when it closes.'}
+              ? t('The app restarts itself when the download is done.')
+              : t(
+                  'The app can look for an upstream release. It will not download or install it.',
+                )}
           </p>
         </div>
       </section>
@@ -280,10 +290,10 @@ export function UpdatesSettings() {
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>On GitHub</h3>
-            <p>What the page of the project has published.</p>
+            <h3>{t('On GitHub')}</h3>
+            <p>{t('What the page of the project has published.')}</p>
           </div>
-          <span className="settings-card-meta">GitHub</span>
+          <span className="settings-card-meta">{t('GitHub')}</span>
         </header>
 
         <div className="settings-card-body">
@@ -291,7 +301,7 @@ export function UpdatesSettings() {
             <button
               type="button"
               className="update-release is-found"
-              title="Read the release on GitHub"
+              title={t('Read the release on GitHub')}
               onClick={() =>
                 bridge?.openRelease?.(beingFound.url || book.page)
               }
@@ -305,10 +315,10 @@ export function UpdatesSettings() {
           ) : null}
 
           {!book.loaded ? (
-            <p className="settings-hint">Reading the page…</p>
+            <p className="settings-hint">{t('Reading the page…')}</p>
           ) : rows.length === 0 && !beingFound ? (
             <p className="settings-hint">
-              {book.message || 'The page is there, and it has nothing on it yet.'}
+              {localize(book.message) || t('The page is there, and it has nothing on it yet.')}
             </p>
           ) : (
             <ul className="update-releases">
@@ -318,14 +328,14 @@ export function UpdatesSettings() {
                     type="button"
                     className="update-release"
                     title={
-                      row.url ? 'Read the release on GitHub' : undefined
+                      row.url ? t('Read the release on GitHub') : undefined
                     }
                     onClick={() => row.url && bridge?.openRelease?.(row.url)}
                   >
                     <code className="update-release-tag">{row.tag}</code>
                     <span className="update-release-name">{row.name}</span>
                     {row.prerelease ? (
-                      <span className="update-release-chip">prerelease</span>
+                      <span className="update-release-chip">{t('prerelease')}</span>
                     ) : null}
                     <span className="update-release-date">
                       {releaseDateWords(row.date)}
@@ -343,7 +353,7 @@ export function UpdatesSettings() {
                 className="update-open"
                 onClick={() => bridge?.openRelease?.(book.page)}
               >
-                Open the releases page
+                {t('Open the releases page')}
               </button>
             </div>
           ) : null}

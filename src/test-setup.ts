@@ -1,6 +1,11 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
+import { setLocale } from './i18n';
+
+// The app itself opens in Simplified Chinese. The tests keep the English the
+// assertions were written in, and a test that wants Chinese sets it itself.
+setLocale('en');
 
 // A list whose rows share a key is a list React draws by guess: a bot can show
 // twice, or not at all. That warning is a failure here, not noise in the log.
@@ -9,6 +14,7 @@ const realError = console.error;
 let duplicateKeys: string[] = [];
 
 beforeEach(() => {
+  setLocale('en');
   duplicateKeys = [];
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
     realError(...args);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { HermesToolset } from '../hermes';
 import { ProfilePicker } from './ProfilePicker';
+import { localize, t } from '../i18n';
 
 /**
  * The tools: what a bot can use besides Hermes itself.
@@ -56,7 +57,7 @@ export function ToolsetsSettings() {
         profile,
       });
       if (!result.ok) {
-        setError(result.error ?? 'The tool could not be turned on or off.');
+        setError(result.error ?? t('The tool could not be turned on or off.'));
         setToolsets((current) =>
           (current ?? []).map((entry) =>
             entry.name === toolset.name ? { ...entry, enabled: !enabled } : entry,
@@ -67,7 +68,7 @@ export function ToolsetsSettings() {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'The tool could not be turned on or off.',
+          : t('The tool could not be turned on or off.'),
       );
       setToolsets((current) =>
         (current ?? []).map((entry) =>
@@ -85,34 +86,33 @@ export function ToolsetsSettings() {
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Tools</h2>
+          <h2>{t('Tools')}</h2>
           <p>
-            What your bots can use besides Hermes. They live on the host, and
-            they are turned on and off there.
+            {t('What your bots can use besides Hermes. They live on the host, and they are turned on and off there.')}
           </p>
         </div>
         <div className="settings-page-side">
           <span className="settings-card-meta">
             {toolsets
-              ? `${on} of ${toolsets.length} on`
-              : 'Reading the host…'}
+              ? t('{on} of {length} on', { on: on, length: toolsets.length })
+              : t('Reading the host…')}
           </span>
         </div>
       </header>
 
-      {error ? <p className="models-error">{error}</p> : null}
+      {error ? <p className="models-error">{localize(error)}</p> : null}
 
       <ProfilePicker
         value={profile}
         onChange={setProfile}
-        label="Whose tools?"
+        label={t('Whose tools?')}
       />
 
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>The tools</h3>
-            <p>A tool that is off is not offered to the bots.</p>
+            <h3>{t('The tools')}</h3>
+            <p>{t('A tool that is off is not offered to the bots.')}</p>
           </div>
         </header>
         <div className="capability-list">
@@ -129,7 +129,7 @@ export function ToolsetsSettings() {
                 ) : null}
               </span>
               {toolset.configured === false ? (
-                <span className="capability-tag">Needs a key</span>
+                <span className="capability-tag">{t('Needs a key')}</span>
               ) : null}
               <button
                 type="button"
@@ -145,7 +145,7 @@ export function ToolsetsSettings() {
             </div>
           ))}
           {toolsets && toolsets.length === 0 ? (
-            <p className="settings-hint">The host offers no tool yet.</p>
+            <p className="settings-hint">{t('The host offers no tool yet.')}</p>
           ) : null}
         </div>
       </section>

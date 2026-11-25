@@ -6,6 +6,10 @@ follow [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **简体中文界面。** 这是个人中文版，不是上游官方发布。窗口默认简体中文，设置里可以改回英文。群聊协议、路径、命令和品牌名保持原样。官方更新不会被自动下载或安装，避免英文原版覆盖汉化。
+
 ### Fixed
 
 - **One release per tag, and every file in it.** electron-builder publishes once

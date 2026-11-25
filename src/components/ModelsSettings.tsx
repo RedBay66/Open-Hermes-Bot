@@ -14,6 +14,7 @@ import {
 } from '../modelPrefs';
 import { avatarColor } from '../profileColor';
 import { SearchIcon, StarIcon } from './Icons';
+import { localize, t } from '../i18n';
 
 type ModelsSettingsProps = {
   /** Only a live tunnel can list models and profiles. */
@@ -50,7 +51,7 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
       .then((result) => {
         if (cancelled) return;
         if (!result.ok) {
-          setModelsError(result.error ?? 'Could not list the models');
+          setModelsError(result.error ?? t('Could not list the models'));
           return;
         }
         setModels(result.models ?? []);
@@ -78,7 +79,7 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
       .then((result) => {
         if (cancelled) return;
         if (!result.ok) {
-          setProfilesError(result.error ?? 'Could not list the bots');
+          setProfilesError(result.error ?? t('Could not list the bots'));
           return;
         }
         setProfiles(result.profiles ?? []);
@@ -157,20 +158,20 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Models</h2>
+          <h2>{t('Models')}</h2>
           <p>
-            One default per bot, and a picker that only lists the models you
-            actually reach for.
+            {t('One default per bot, and a picker that only lists the models you actually reach for.')}
           </p>
         </div>
         <div className="settings-page-side">
           <div className="models-stats">
             <span>
-              <strong>{offeredCount}</strong> offered
+              <strong>{offeredCount}</strong> {t('offered')}
             </span>
             <span className="models-stats-dot" aria-hidden="true" />
             <span>
-              <strong>{bots.length}</strong> {bots.length === 1 ? 'bot' : 'bots'}
+              <strong>{bots.length}</strong>{' '}
+              {bots.length === 1 ? t('bot') : t('bots')}
             </span>
           </div>
           <button
@@ -179,38 +180,37 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
             disabled={!bridge || modelsLoading}
             onClick={() => setReload((count) => count + 1)}
           >
-            {modelsLoading ? 'Refreshing…' : 'Refresh'}
+            {modelsLoading ? t('Refreshing…') : t('Refresh')}
           </button>
         </div>
       </header>
 
       {bridge ? null : (
         <p className="settings-notice">
-          Model settings are only available inside the desktop app.
+          {t('Model settings are only available inside the desktop app.')}
         </p>
       )}
       {bridge && !connected ? (
         <p className="settings-notice">
-          The tunnel is closed — open Connection and connect to refresh the
-          list. Your choices are kept.
+          {t('The tunnel is closed — open Connection and connect to refresh the list. Your choices are kept.')}
         </p>
       ) : null}
 
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>Bot defaults</h3>
-            <p>New conversations start on these models.</p>
+            <h3>{t('Bot defaults')}</h3>
+            <p>{t('New conversations start on these models.')}</p>
           </div>
           <span className="settings-card-meta">
             {profiles === null && !profilesError
-              ? 'Reading the gateway…'
-              : `${configuredBots} of ${bots.length} set`}
+              ? t('Reading the gateway…')
+              : t('{configuredBots} of {length} set', { configuredBots: configuredBots, length: bots.length })}
           </span>
         </header>
 
         {profilesError ? (
-          <p className="models-error">{profilesError}</p>
+          <p className="models-error">{localize(profilesError)}</p>
         ) : null}
 
         <div className="models-bots">
@@ -235,11 +235,11 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
                 />
                 <span className="models-bot-name">{bot.label}</span>
                 {bot.profile ? null : (
-                  <span className="models-tag">default</span>
+                  <span className="models-tag">{t('default')}</span>
                 )}
                 <select
                   className="models-select"
-                  aria-label={`Default model for ${bot.label}`}
+                  aria-label={t('Default model for {label}', { label: bot.label })}
                   value={current ? modelId(current) : ''}
                   disabled={!models}
                   onChange={(event) => {
@@ -257,7 +257,7 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
                     );
                   }}
                 >
-                  <option value="">Bot&apos;s own model</option>
+                  <option value="">{t('Bot\'s own model')}</option>
                   {orphan ? (
                     <option value={modelId(orphan)}>{orphan.model}</option>
                   ) : null}
@@ -273,21 +273,21 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
         </div>
 
         {profilesWarning ? (
-          <p className="models-caption">{profilesWarning}</p>
+          <p className="models-caption">{localize(profilesWarning)}</p>
         ) : null}
       </section>
 
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>Picker</h3>
-            <p>Star what you use often, switch off the rest.</p>
+            <h3>{t('Picker')}</h3>
+            <p>{t('Star what you use often, switch off the rest.')}</p>
           </div>
           <span className="settings-card-meta">
             {models
-              ? `${offeredCount} of ${totalModels} on`
+              ? t('{offeredCount} of {totalModels} on', { offeredCount: offeredCount, totalModels: totalModels })
               : modelsLoading
-                ? 'Reading the gateway…'
+                ? t('Reading the gateway…')
                 : '—'}
           </span>
         </header>
@@ -298,7 +298,7 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
             <input
               type="search"
               value={needle}
-              placeholder="Search models"
+              placeholder={t('Search models')}
               spellCheck={false}
               onChange={(event) => setNeedle(event.target.value)}
             />
@@ -311,14 +311,14 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
               update(withAllVisible(prefs));
             }}
           >
-            Show all
+            {t('Show all')}
           </button>
         </div>
 
-        {modelsError ? <p className="models-error">{modelsError}</p> : null}
+        {modelsError ? <p className="models-error">{localize(modelsError)}</p> : null}
 
         {!models && modelsLoading ? (
-          <p className="models-empty">Loading the model list…</p>
+          <p className="models-empty">{t('Loading the model list…')}</p>
         ) : null}
 
         <div className="models-list">
@@ -349,11 +349,11 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
                         aria-pressed={favorite}
                         aria-label={
                           favorite
-                            ? `Remove ${entry.model} from favorites`
-                            : `Add ${entry.model} to favorites`
+                            ? t('Remove {model} from favorites', { model: entry.model })
+                            : t('Add {model} to favorites', { model: entry.model })
                         }
                         title={
-                          favorite ? 'Remove from favorites' : 'Add to favorites'
+                          favorite ? t('Remove from favorites') : t('Add to favorites')
                         }
                         onClick={() => update(withFavorite(prefs, id))}
                       >
@@ -361,17 +361,17 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
                       </button>
                       <span className="models-name">{entry.model}</span>
                       {entry.current ? (
-                        <span className="models-tag">in use</span>
+                        <span className="models-tag">{t('in use')}</span>
                       ) : null}
                       <button
                         type="button"
                         role="switch"
                         aria-checked={checked}
-                        aria-label={`List ${entry.model} in the picker`}
+                        aria-label={t('List {model} in the picker', { model: entry.model })}
                         title={
                           checked
-                            ? 'Listed in the model picker'
-                            : 'Hidden from the model picker'
+                            ? t('Listed in the model picker')
+                            : t('Hidden from the model picker')
                         }
                         className={`settings-switch ${checked ? 'is-on' : ''}`}
                         onClick={() =>
@@ -391,13 +391,13 @@ export function ModelsSettings({ connected }: ModelsSettingsProps) {
         {models && modelGroups.length === 0 ? (
           <p className="models-empty">
             {searching
-              ? 'No model matches that search.'
-              : 'No authenticated provider offers a model yet.'}
+              ? t('No model matches that search.')
+              : t('No authenticated provider offers a model yet.')}
           </p>
         ) : null}
 
         <p className="models-caption">
-          A model picked inside a conversation still wins over the bot default.
+          {t('A model picked inside a conversation still wins over the bot default.')}
         </p>
       </section>
     </div>

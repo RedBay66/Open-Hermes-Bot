@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { HermesProfile } from '../hermes';
+import { t } from '../i18n';
 
 type ProfilePickerProps = {
   /** The profile that is asked for: '' is the default bot of the host. */
@@ -18,7 +19,7 @@ type ProfilePickerProps = {
 export function ProfilePicker({ value, onChange, label }: ProfilePickerProps) {
   const bridge = window.hermes;
   const [bots, setBots] = useState<HermesProfile[]>([]);
-  const [defaultLabel, setDefaultLabel] = useState('Default bot');
+  const [defaultLabel, setDefaultLabel] = useState(t('Default bot'));
 
   useEffect(() => {
     const reader = bridge?.profiles;

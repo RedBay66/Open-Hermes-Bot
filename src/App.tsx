@@ -141,6 +141,7 @@ import {
   type SingleAvatar,
   type Thread,
 } from './data';
+import { localize, t, useLocale } from './i18n';
 
 const MAX_PINNED = 3;
 
@@ -215,8 +216,8 @@ function messageReactions(message: Message, botName: string): Reaction[] {
 
 /** What a pill says: who left it, and with what. */
 function reactionLabel(group: ReactionGroup): string {
-  const who = group.by.join(', ') || 'Un bot';
-  return `${who} a réagi ${group.emoji}`;
+  const who = group.by.join(', ') || t('A bot');
+  return t('{who} reacted {emoji}', { who, emoji: group.emoji });
 }
 
 // The primary Hermes profile lives at ~/.hermes itself, not under profiles/, so
@@ -229,7 +230,7 @@ function chiefOfStaffThread(primary?: HermesProfile): Thread {
     id: CHIEF_ID,
     name: primary?.title?.trim() || 'Chief of Staff',
     avatar: chiefFace(primary),
-    preview: 'Default bot',
+    preview: t('Default bot'),
     time: '',
     chatTime: '',
     messages: [],
@@ -263,8 +264,8 @@ function threadForBot(profile: HermesProfile, now = Date.now()): Thread {
       shape: botShape(profile.shape),
       variant: 'neutral',
     },
-    preview: warming ? 'Starting…' : '',
-    time: warming ? '…' : '',
+    preview: warming ? t('Starting…') : '',
+    time: warming ? t('…') : '',
     chatTime: '',
     messages: [],
     ...(warming ? { pending: true as const, pendingSince: now } : {}),
@@ -336,7 +337,7 @@ export function mergeBots(
       ...thread,
       pending: true as const,
       pendingSince: pendingAt(thread.profile!) ?? thread.pendingSince ?? now,
-      preview: thread.preview || 'Starting…',
+      preview: thread.preview || t('Starting…'),
     };
   });
   // The default bot is not a listed profile: it is carried across refreshes by
@@ -476,18 +477,22 @@ async function fileToBase64(file: File): Promise<string> {
 
 function fileExtension(name: string) {
   const dot = name.lastIndexOf('.');
-  if (dot <= 0 || dot === name.length - 1) return 'FILE';
+  if (dot <= 0 || dot === name.length - 1) return t('FILE');
   return name.slice(dot + 1).slice(0, 4).toUpperCase();
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return t('{count} B', { count: bytes });
+  if (bytes < 1024 * 1024) {
+    return t('{count} KB', { count: Math.max(1, Math.round(bytes / 1024)) });
+  }
+  return t('{count} MB', { count: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 
 export default function App() {
+  // Reading the language here redraws the window when it changes.
+  useLocale();
   // The model preferences live on the server, with the primary profile.
   const { prefs, update: updatePrefs } = useModelPrefs();
   const [threads, setThreads] = useState<Thread[]>(() => [chiefOfStaffThread()]);
@@ -721,7 +726,7 @@ export default function App() {
         try {
           const result = await bridge.history({ profile });
           if (!result.ok) {
-            return { profile, error: result.error ?? 'The host did not answer' };
+            return { profile, error: result.error ?? t('The host did not answer') };
           }
           return { profile, sessions: result.sessions ?? [] };
         } catch (reason) {
@@ -730,7 +735,7 @@ export default function App() {
             error:
               reason instanceof Error
                 ? reason.message
-                : 'The host did not answer',
+                : t('The host did not answer'),
           };
         }
       }),
@@ -1105,7 +1110,7 @@ export default function App() {
           // breath as the conversations that are on screen.
           void loadHistory(served);
         } else {
-          setBotsError(result.error ?? 'Could not reach Hermes');
+          setBotsError(result.error ?? t('Could not reach Hermes'));
         }
       })
       .catch(() => undefined)
@@ -1462,7 +1467,7 @@ export default function App() {
       }
       applyLive(requestId, (live) => ({
         ...live,
-        text: `${live.text}${text}`,
+        text: `${live.text ?? ''}${text}`,
         tool: undefined,
         toolDetail: undefined,
         reasoning: undefined,
@@ -1729,6 +1734,16 @@ export default function App() {
   }, [onboardingOpen, openFind]);
 
   useEffect(() => {
+    return window.hermes?.onMenuSettings?.(() => {
+      setContextMenu(null);
+      setLogoOpen(false);
+      setRenaming(false);
+      setSettingsSection('connection');
+      setSettingsOpen(true);
+    });
+  }, []);
+
+  useEffect(() => {
     const bridge = window.hermes;
     if (!bridge) return;
     let cancelled = false;
@@ -1908,7 +1923,7 @@ export default function App() {
       });
       if (pastRead.current !== read) return;
       if (!result?.ok || !result.messages) {
-        setPastError(result?.error ?? 'This conversation could not be read.');
+        setPastError(result?.error ?? t('This conversation could not be read.'));
         return;
       }
       setPastMessages(privateTranscript(result.messages));
@@ -1917,7 +1932,7 @@ export default function App() {
       setPastError(
         reason instanceof Error
           ? reason.message
-          : 'This conversation could not be read.',
+          : t('This conversation could not be read.'),
       );
     } finally {
       if (pastRead.current === read) setPastReading(false);
@@ -1970,7 +1985,7 @@ export default function App() {
         })
         .catch((reason: Error) => ({ ok: false, error: reason.message }));
       if (!renamed.ok) {
-        setPastError(renamed.error ?? 'This conversation could not be set aside.');
+        setPastError(renamed.error ?? t('This conversation could not be set aside.'));
         return;
       }
     }
@@ -1993,7 +2008,7 @@ export default function App() {
               live: [],
               unread: false,
               preview: '',
-              chatTime: 'Now',
+              chatTime: t('Now'),
             }
           : item,
       ),
@@ -2025,7 +2040,7 @@ export default function App() {
         .renameSession({ profile, sessionId: previous, title: aside })
         .catch((reason: Error) => ({ ok: false, error: reason.message }));
       if (!renamed.ok) {
-        setPastError(renamed.error ?? 'The room in use could not be set aside.');
+        setPastError(renamed.error ?? t('The room in use could not be set aside.'));
         return;
       }
     }
@@ -2037,7 +2052,7 @@ export default function App() {
       })
       .catch((reason: Error) => ({ ok: false, error: reason.message }));
     if (!adopted.ok) {
-      setPastError(adopted.error ?? 'This conversation could not be resumed.');
+      setPastError(adopted.error ?? t('This conversation could not be resumed.'));
       return;
     }
 
@@ -2179,11 +2194,11 @@ export default function App() {
         return {
           ok: false,
           error:
-            'The app did not hear back from the server. Nothing was changed — check the connection and try again.',
+            t('The app did not hear back from the server. Nothing was changed — check the connection and try again.'),
         };
       }
       if (!result.ok) {
-        return { ok: false, error: result.error ?? 'Could not create the bot' };
+        return { ok: false, error: result.error ?? t('Could not create the bot') };
       }
       profile = result.name;
       served = result.served !== false;
@@ -2205,10 +2220,12 @@ export default function App() {
         variant: 'neutral',
       },
       preview: profile
-        ? served ? `Hermes profile ${profile}` : 'Starting…'
-        : 'Start a conversation',
-      time: served ? 'Now' : '…',
-      chatTime: 'Now',
+        ? served
+          ? t('Hermes profile {profile}', { profile })
+          : t('Starting…')
+        : t('Start a conversation'),
+      time: served ? t('Now') : t('…'),
+      chatTime: t('Now'),
       messages: [],
       ...(profile && !served
         ? { pending: true as const, pendingSince: Date.now() }
@@ -2226,9 +2243,9 @@ export default function App() {
         kind: 'group',
         members: input.members.map((member) => member.avatar),
       },
-      preview: 'Start a conversation',
-      time: 'Now',
-      chatTime: 'Now',
+      preview: t('Start a conversation'),
+      time: t('Now'),
+      chatTime: t('Now'),
       messages: [],
     });
   }
@@ -2309,7 +2326,7 @@ export default function App() {
               {
                 id: uid(),
                 role: 'event',
-                text: `${target.name} left the group.`,
+                text: t('{name} left the group.', { name: target.name }),
               },
             ],
           };
@@ -2457,7 +2474,7 @@ export default function App() {
                     {
                       id: uid(),
                       role: 'event',
-                      text: `The bot could not be deleted on the server: ${result.error ?? 'unknown error'}`,
+                      text: t('The bot could not be deleted on the server: {p0}', { p0: result.error ?? t('unknown error') }),
                     },
                   ],
                 }
@@ -2791,7 +2808,7 @@ export default function App() {
                   {
                     id: uid(),
                     role: 'event',
-                    text: 'This group has no bots left — create one and add it to a new group.',
+                    text: t('This group has no bots left — create one and add it to a new group.'),
                   },
                 ],
               }
@@ -2865,7 +2882,7 @@ export default function App() {
           {
             id: uid(),
             role: 'event',
-            text: 'Not connected to Hermes yet — open Settings, connect, then send this again.',
+            text: t('Not connected to Hermes yet — open Settings, connect, then send this again.'),
           },
         ],
       }));
@@ -2957,7 +2974,7 @@ export default function App() {
             } else {
               joinErrors.set(
                 member.id,
-                created.error ?? 'the session could not be opened',
+                created.error ?? t('the session could not be opened'),
               );
             }
           } catch (reason) {
@@ -2965,7 +2982,7 @@ export default function App() {
               member.id,
               reason instanceof Error && reason.message
                 ? reason.message
-                : 'the session could not be opened',
+                : t('the session could not be opened'),
             );
           }
         }),
@@ -2982,7 +2999,10 @@ export default function App() {
             if (joined) {
               return {
                 floor,
-                error: `${member.name} could not join the group: ${joined}`,
+                error: t('{name} could not join the group: {reason}', {
+                  name: member.name,
+                  reason: joined,
+                }),
               };
             }
 
@@ -3029,7 +3049,7 @@ export default function App() {
 
             let note: string | undefined;
             if (!result.ok && isQuotaFailure(result.error)) {
-              const failed = pick?.model ?? 'The configured model';
+              const failed = pick?.model ?? t('The configured model');
               const rescue = await freeModelFor(member.profile);
               if (rescue && rescue.model !== pick?.model) {
                 result = await ask(rescue);
@@ -3049,7 +3069,10 @@ export default function App() {
                       }),
                     );
                   }
-                  note = `${failed} is out of quota — ${member.name} answered with ${rescue.model} instead.`;
+                  note = t(
+                    '{failed} is out of quota — {name} answered with {model} instead.',
+                    { failed, name: member.name, model: rescue.model },
+                  );
                 }
               }
             }
@@ -3062,7 +3085,10 @@ export default function App() {
               }
               return {
                 floor,
-                error: `${member.name} could not answer: ${result.error ?? 'unknown error'}`,
+                error: t('{name} could not answer: {reason}', {
+                  name: member.name,
+                  reason: result.error ?? t('unknown error'),
+                }),
               };
             }
             // A turn that stopped early answered anyway: the line under it
@@ -3083,11 +3109,13 @@ export default function App() {
             }
             return {
               floor,
-              error: `${member.name} could not answer: ${
-                reason instanceof Error && reason.message
-                  ? reason.message
-                  : 'something broke'
-              }`,
+              error: t('{name} could not answer: {reason}', {
+                name: member.name,
+                reason:
+                  reason instanceof Error && reason.message
+                    ? reason.message
+                    : t('something broke'),
+              }),
             };
           } finally {
             runtime.active.delete(requestId);
@@ -3169,7 +3197,7 @@ export default function App() {
               {
                 id: uid(),
                 role: 'event',
-                text: `${member.name} stayed silent.`,
+                text: t('{name} stayed silent.', { name: member.name }),
               },
             ];
           }
@@ -3222,7 +3250,7 @@ export default function App() {
     if (lines === 0 && !reacted && failures === 0) {
       history = [
         ...history,
-        { id: uid(), role: 'event', text: 'The group stayed silent.' },
+        { id: uid(), role: 'event', text: t('The group stayed silent.') },
       ];
     }
     sync((item) => ({
@@ -3237,7 +3265,7 @@ export default function App() {
       preview: lastLine
         ? lastLine.replace(/\s+/g, ' ').slice(0, 90)
         : item.preview,
-      chatTime: 'Now',
+      chatTime: t('Now'),
       unread: threadId !== activeIdRef.current,
     }));
   }
@@ -3280,14 +3308,14 @@ export default function App() {
     // A file that is still on its way to the server would be lost by the
     // message: the person is told to wait a moment.
     if (attachments.some((attachment) => attachment.status === 'uploading')) {
-      setAttachmentNote('The file is still being copied to the server.');
+      setAttachmentNote(t('The file is still being copied to the server.'));
       return;
     }
     const attached = attachments.filter(
       (attachment) => attachment.status === 'ready' && attachment.path,
     );
     if (attachments.length > attached.length) {
-      setAttachmentNote('A file could not be copied to the server and was not sent.');
+      setAttachmentNote(t('A file could not be copied to the server and was not sent.'));
     }
 
     // A group speaks with many voices: it gets its own relay, not the single
@@ -3414,7 +3442,7 @@ export default function App() {
 
     if (!bridge?.sendChat) {
       fail(
-        'Not connected to Hermes yet — open Settings, connect, then send this again.',
+        t('Not connected to Hermes yet — open Settings, connect, then send this again.'),
       );
       return;
     }
@@ -3434,7 +3462,7 @@ export default function App() {
           title: thread.name,
         });
         if (!created.ok || !created.sessionId) {
-          fail(created.error ?? 'Could not open a conversation with this bot.');
+          fail(created.error ?? t('Could not open a conversation with this bot.'));
           return;
         }
         sessionId = created.sessionId;
@@ -3501,7 +3529,7 @@ export default function App() {
       // explicit pick is the person's choice, so it is not overwritten as the
       // bot's default — only the thread falls back for now.
       if (!result.ok && isQuotaFailure(result.error)) {
-        const failed = thread.model ?? fallback?.model ?? 'The configured model';
+        const failed = thread.model ?? fallback?.model ?? t('The configured model');
         const rescue = await freeModelFor(thread.profile);
         if (rescue && rescue.model !== failed) {
           result = await ask(rescue);
@@ -3528,7 +3556,7 @@ export default function App() {
                         {
                           id: uid(),
                           role: 'event',
-                          text: `${failed} is out of quota — answered with ${rescue.model} instead.`,
+                          text: t('{failed} is out of quota — answered with {model} instead.', { failed: failed, model: rescue.model }),
                         },
                       ],
                     }
@@ -3561,7 +3589,7 @@ export default function App() {
           }
           return;
         }
-        fail(result.error ?? 'The bot could not answer this one.');
+        fail(result.error ?? t('The bot could not answer this one.'));
         return;
       }
       turnNote = result.note?.trim() ?? '';
@@ -3574,14 +3602,14 @@ export default function App() {
       fail(
         reason instanceof Error && reason.message
           ? reason.message
-          : 'Something broke while talking to the bot.',
+          : t('Something broke while talking to the bot.'),
       );
       return;
     }
 
     // A tapback can be the whole reply: the user needs no bubble saying "OK".
     if (!reply && !reaction) {
-      fail('The bot finished without saying anything.');
+      fail(t('The bot finished without saying anything.'));
       return;
     }
     if (!isCurrent()) return;
@@ -3600,7 +3628,7 @@ export default function App() {
               preview: reply
                 ? reply.replace(/\s+/g, ' ').slice(0, 90)
                 : item.preview,
-              chatTime: 'Now',
+              chatTime: t('Now'),
               unread: threadId !== activeIdRef.current,
               messages: withTurnNote(
                 attachReaction(
@@ -3648,7 +3676,7 @@ export default function App() {
     ) => {
       const bridge = window.hermes;
       if (!bridge?.respondApproval) {
-        return { ok: false, error: 'This build cannot answer approvals.' };
+        return { ok: false, error: t('This build cannot answer approvals.') };
       }
       const result = await bridge.respondApproval({
         runId: approval.runId,
@@ -3667,7 +3695,7 @@ export default function App() {
           }),
         );
       }
-      return result ?? { ok: false, error: 'The host did not answer.' };
+      return result ?? { ok: false, error: t('The host did not answer.') };
     },
     [activeThread?.profile],
   );
@@ -3681,7 +3709,7 @@ export default function App() {
     async (clarify: ClarifyRequest, answer: string, profile?: string) => {
       const bridge = window.hermes;
       if (!bridge?.respondClarify) {
-        return { ok: false, error: 'This build cannot answer questions.' };
+        return { ok: false, error: t('This build cannot answer questions.') };
       }
       const result = await bridge.respondClarify({
         runId: clarify.runId,
@@ -3698,7 +3726,7 @@ export default function App() {
           }),
         );
       }
-      return result ?? { ok: false, error: 'The host did not answer.' };
+      return result ?? { ok: false, error: t('The host did not answer.') };
     },
     [activeThread?.profile],
   );
@@ -3824,7 +3852,7 @@ export default function App() {
         data,
       });
       if (!result.ok) {
-        throw new Error(result.error ?? 'The file could not be copied');
+        throw new Error(result.error ?? t('The file could not be copied'));
       }
       setAttachments((current) =>
         current.map((attachment) =>
@@ -3837,7 +3865,7 @@ export default function App() {
       setAttachmentNote(
         reason instanceof Error && reason.message
           ? reason.message
-          : 'The file could not be copied to the server',
+          : t('The file could not be copied to the server'),
       );
       setAttachments((current) =>
         current.map((attachment) =>
@@ -3869,8 +3897,8 @@ export default function App() {
       setListening(false);
       setDictationNote(
         reason instanceof Error && reason.name === 'NotAllowedError'
-          ? 'The microphone is not allowed. macOS asks for permission the first time.'
-          : 'The microphone could not be started.',
+          ? t('The microphone is not allowed. macOS asks for permission the first time.')
+          : t('The microphone could not be started.'),
       );
     }
   }
@@ -3885,10 +3913,10 @@ export default function App() {
     recording.stop();
     const bridge = window.hermes;
     if (!bridge?.transcribeVoice) {
-      setDictationNote('This build cannot transcribe a recording.');
+      setDictationNote(t('This build cannot transcribe a recording.'));
       return;
     }
-    setDictationNote('Transcribing…');
+    setDictationNote(t('Transcribing…'));
     try {
       const blob = await recording.blob();
       const data = await blobToBase64(blob);
@@ -3897,7 +3925,7 @@ export default function App() {
         mimeType: recording.mimeType,
       });
       if (!result.ok || !result.transcript) {
-        setDictationNote(result.error ?? 'The recording could not be transcribed.');
+        setDictationNote(result.error ?? t('The recording could not be transcribed.'));
         return;
       }
       const said = result.transcript.trim();
@@ -3908,7 +3936,7 @@ export default function App() {
       setDictationNote(
         reason instanceof Error && reason.message
           ? reason.message
-          : 'The recording could not be transcribed.',
+          : t('The recording could not be transcribed.'),
       );
     }
   }
@@ -3931,8 +3959,8 @@ export default function App() {
             type="button"
             className="topbar-button new-chat"
             onClick={openCreateDialog}
-            aria-label="Create a bot or group"
-            title="New bot or group  ⌘N"
+            aria-label={t('Create a bot or group')}
+            title={t('New bot or group ⌘N')}
           >
             <PlusIcon size={20} />
           </button>
@@ -3945,7 +3973,7 @@ export default function App() {
             className="search-input"
             type="text"
             value={query}
-            placeholder="Search"
+            placeholder={t('Search')}
             spellCheck={false}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -3954,12 +3982,12 @@ export default function App() {
                 event.currentTarget.blur();
               }
             }}
-            aria-label="Search agents"
+            aria-label={t('Search agents')}
           />
         </div>
 
         {pinnedThreads.length > 0 ? (
-          <section className="pinned-strip" aria-label="Pinned agents">
+          <section className="pinned-strip" aria-label={t('Pinned agents')}>
             <div className="pinned-grid">
               {pinnedThreads.map((thread) => {
                 // A past conversation is drawn over its bot: the bot's row
@@ -4002,7 +4030,7 @@ export default function App() {
           </section>
         ) : null}
 
-        <nav className="thread-list" aria-label="Agents">
+        <nav className="thread-list" aria-label={t('Agents')}>
           {filteredThreads.map((thread) => {
             const isActive = thread.id === activeThread?.id && !pastOpen;
             const warming = Boolean(thread.pending);
@@ -4038,11 +4066,11 @@ export default function App() {
                   </span>
                   <span className={`thread-preview ${thread.thinking || thread.elsewhere ? 'is-typing' : ''}`}>
                     {thread.thinking || thread.elsewhere
-                      ? 'Typing...'
+                      ? t('Typing...')
                       : warming
                         ? (thread.serveFailed
-                            ? 'Could not connect — retry or remove'
-                            : 'Starting… Hermes is connecting')
+                            ? t('Could not connect — retry or remove')
+                            : t('Starting… Hermes is connecting'))
                         : thread.preview}
                   </span>
                   {warming ? (
@@ -4051,7 +4079,7 @@ export default function App() {
                       role="status"
                     >
                       <span className="thread-status-dot" aria-hidden="true" />
-                      {thread.serveFailed ? 'Not connected' : 'Connecting…'}
+                      {thread.serveFailed ? t('Not connected') : t('Connecting…')}
                     </span>
                   ) : null}
                 </span>
@@ -4062,14 +4090,14 @@ export default function App() {
           {filteredThreads.length === 0 &&
           pinnedThreads.length === 0 &&
           pastView.total === 0 ? (
-            <p className="no-results">No agents found</p>
+            <p className="no-results">{t('No agents found')}</p>
           ) : null}
         </nav>
 
         {historyState === 'reading' ||
         historyState === 'error' ||
         pastGroups.length ? (
-          <section className="history" aria-label="Past conversations">
+          <section className="history" aria-label={t('Past conversations')}>
             <button
               type="button"
               className="history-toggle"
@@ -4080,7 +4108,7 @@ export default function App() {
                 className={`history-caret ${historyOpen ? 'is-open' : ''}`}
                 aria-hidden="true"
               />
-              <span className="history-label">Past conversations</span>
+              <span className="history-label">{t('Past conversations')}</span>
               <span className="history-count">{pastView.total}</span>
             </button>
 
@@ -4095,13 +4123,13 @@ export default function App() {
                 ) : null}
                 {historyState === 'error' ? (
                   <p className="history-error" role="status">
-                    {historyError || 'The host did not answer.'}{' '}
+                    {localize(historyError) || t('The host did not answer.')}{' '}
                     <button
                       type="button"
                       className="history-retry"
                       onClick={retryHistory}
                     >
-                      Try again
+                      {t('Try again')}
                     </button>
                   </p>
                 ) : null}
@@ -4131,7 +4159,7 @@ export default function App() {
                         <span className="history-row-meta">
                           {relativeDay(historyNow, session.lastActive)} ·{' '}
                           {session.messageCount}{' '}
-                          {session.messageCount === 1 ? 'message' : 'messages'}
+                          {session.messageCount === 1 ? t('message') : t('messages')}
                         </span>
                       </button>
                     ))}
@@ -4143,13 +4171,13 @@ export default function App() {
                     className="history-more"
                     onClick={() => setHistoryAll(true)}
                   >
-                    See the {pastView.hidden}{' '}
-                    {pastView.hidden === 1 ? 'other' : 'others'}
+                    {t('See the')} {pastView.hidden}{' '}
+                    {pastView.hidden === 1 ? t('other') : t('others')}
                   </button>
                 ) : null}
                 {pastView.total === 0 ? (
                   <p className="history-empty">
-                    No past conversation matches.
+                    {t('No past conversation matches.')}
                   </p>
                 ) : null}
               </div>
@@ -4164,10 +4192,10 @@ export default function App() {
               type="button"
               className="footer-host"
               onClick={() => openSettings()}
-              aria-label="Settings"
-              title="Settings  ⌘,"
+              aria-label={t('Settings')}
+              title={t('Settings ⌘,')}
             >
-              <span className="footer-host-name">Settings</span>
+              <span className="footer-host-name">{t('Settings')}</span>
             </button>
           </div>
           <ConnectorDock rows={dockRows} onOpen={openConnectors} />
@@ -4177,7 +4205,7 @@ export default function App() {
       <button
         type="button"
         className="sidebar-scrim"
-        aria-label="Close agents"
+        aria-label={t('Close agents')}
         tabIndex={-1}
         onClick={() => setSidebarOpen(false)}
       />
@@ -4189,9 +4217,9 @@ export default function App() {
               type="button"
               className="header-menu"
               onClick={() => setSidebarOpen(true)}
-              aria-label="Open agents"
+              aria-label={t('Open agents')}
               aria-expanded={sidebarOpen}
-              title="Open agents"
+              title={t('Open agents')}
             >
               <MenuIcon size={19} />
             </button>
@@ -4210,9 +4238,9 @@ export default function App() {
                   type="button"
                   className={`header-logo ${logoOpen ? 'is-open' : ''}`}
                   onClick={() => setLogoOpen((current) => !current)}
-                  aria-label="Change logo"
+                  aria-label={t('Change logo')}
                   aria-expanded={logoOpen}
-                  title="Change logo"
+                  title={t('Change logo')}
                 >
                   <AgentAvatar
                     avatar={activeThread.avatar}
@@ -4237,8 +4265,8 @@ export default function App() {
                   type="button"
                   className="chat-back"
                   onClick={closePastConversation}
-                  aria-label={`Back to ${pastOpen.group.name}`}
-                  title={`Back to ${pastOpen.group.name}`}
+                  aria-label={t('Back to {name}', { name: pastOpen.group.name })}
+                  title={t('Back to {name}', { name: pastOpen.group.name })}
                 >
                   <span className="chat-back-caret" aria-hidden="true">
                     ‹
@@ -4258,7 +4286,7 @@ export default function App() {
                 value={nameDraft}
                 maxLength={40}
                 spellCheck={false}
-                aria-label="Agent name"
+                aria-label={t('Agent name')}
                 onChange={(event) => setNameDraft(event.target.value)}
                 onBlur={commitRename}
                 onKeyDown={(event) => {
@@ -4277,7 +4305,7 @@ export default function App() {
                   type="button"
                   className="chat-title-button"
                   onClick={startRenaming}
-                  title="Rename agent"
+                  title={t('Rename agent')}
                 >
                   {activeThread.name}
                 </button>
@@ -4290,9 +4318,9 @@ export default function App() {
               type="button"
               className={`header-find ${findOpen ? 'is-open' : ''}`}
               onClick={() => (findOpen ? closeFind() : openFind())}
-              aria-label="Find in this conversation"
+              aria-label={t('Find in this conversation')}
               aria-expanded={findOpen}
-              title="Find in this conversation"
+              title={t('Find in this conversation')}
             >
               <SearchIcon size={16} />
             </button>
@@ -4303,15 +4331,15 @@ export default function App() {
               type="button"
               className={`header-sync is-${syncState}`}
               onClick={() => void syncEverything()}
-              aria-label="Sync everything from Hermes"
+              aria-label={t('Sync everything from Hermes')}
               title={
                 syncState === 'running'
-                  ? 'Syncing everything from Hermes…'
+                  ? t('Syncing everything from Hermes…')
                   : syncState === 'done'
-                    ? 'Everything is in sync'
+                    ? t('Everything is in sync')
                     : syncState === 'error'
-                      ? 'Hermes did not answer — try again'
-                      : 'Sync everything from Hermes'
+                      ? t('Hermes did not answer — try again')
+                      : t('Sync everything from Hermes')
               }
               disabled={syncState === 'running' || hermesStatus.state !== 'connected'}
             >
@@ -4328,8 +4356,8 @@ export default function App() {
                 className="find-input"
                 value={findQuery}
                 spellCheck={false}
-                placeholder="Find in this conversation"
-                aria-label="Find in this conversation"
+                placeholder={t('Find in this conversation')}
+                aria-label={t('Find in this conversation')}
                 onChange={(event) => {
                   setFindQuery(event.target.value);
                   setFindAt(0);
@@ -4349,16 +4377,16 @@ export default function App() {
                 aria-live="polite"
               >
                 {findHits.length
-                  ? `${Math.min(findAt + 1, findHits.length)}/${findHits.length}`
+                  ? t('{p0}/{length}', { p0: Math.min(findAt + 1, findHits.length), length: findHits.length })
                   : findQuery.trim()
-                    ? 'No match'
+                    ? t('No match')
                     : '0/0'}
               </span>
               <button
                 type="button"
                 className="find-step is-previous"
-                aria-label="Previous match"
-                title="Previous match"
+                aria-label={t('Previous match')}
+                title={t('Previous match')}
                 disabled={!findHits.length}
                 onClick={() => stepToMatch(-1)}
               >
@@ -4367,8 +4395,8 @@ export default function App() {
               <button
                 type="button"
                 className="find-step is-next"
-                aria-label="Next match"
-                title="Next match"
+                aria-label={t('Next match')}
+                title={t('Next match')}
                 disabled={!findHits.length}
                 onClick={() => stepToMatch(1)}
               >
@@ -4377,8 +4405,8 @@ export default function App() {
               <button
                 type="button"
                 className="find-close"
-                aria-label="Close the search"
-                title="Close"
+                aria-label={t('Close the search')}
+                title={t('Close')}
                 onClick={closeFind}
               >
                 ×
@@ -4389,13 +4417,13 @@ export default function App() {
 
         {botsError ? (
           <p className="chat-notice" role="status">
-            Hermes is out of reach — {botsError}.{' '}
+            {t('Hermes is out of reach —')} {localize(botsError)}.{' '}
             <button
               type="button"
               className="chat-notice-action"
               onClick={() => openSettings()}
             >
-              Open the connection settings
+              {t('Open the connection settings')}
             </button>
           </p>
         ) : null}
@@ -4419,11 +4447,11 @@ export default function App() {
                   <i />
                   <i />
                 </span>
-                Reading the conversation…
+                {t('Reading the conversation…')}
               </div>
             ) : pastOpen && pastError ? (
               <div className="past-state is-error" role="status">
-                <p>{pastError}</p>
+                <p>{localize(pastError)}</p>
                 <button
                   type="button"
                   className="button-ghost"
@@ -4431,7 +4459,7 @@ export default function App() {
                     pastOpen && openPastConversation(pastOpen.group, pastOpen.session)
                   }
                 >
-                  Try again
+                  {t('Try again')}
                 </button>
               </div>
             ) : activeThread.pending ? (
@@ -4449,13 +4477,13 @@ export default function App() {
                 </span>
                 <h2>
                   {activeThread.serveFailed
-                    ? `${activeThread.name} could not connect`
-                    : `Connecting ${activeThread.name}…`}
+                    ? t('{name} could not connect', { name: activeThread.name })
+                    : t('Connecting {name}…', { name: activeThread.name })}
                 </h2>
                 <p>
                   {activeThread.serveFailed
-                    ? 'Hermes still does not serve this bot. It will be removed automatically if it never connects — retry now or remove it.'
-                    : 'The bot is created on the host. Hermes picks it up at its next scan — you can wait here, no need to create it again.'}
+                    ? t('Hermes still does not serve this bot. It will be removed automatically if it never connects — retry now or remove it.')
+                    : t('The bot is created on the host. Hermes picks it up at its next scan — you can wait here, no need to create it again.')}
                 </p>
                 <div className="warming-actions">
                   <button
@@ -4463,21 +4491,21 @@ export default function App() {
                     className="button-primary"
                     onClick={() => retryWarmingBot(activeThread)}
                   >
-                    Retry now
+                    {t('Retry now')}
                   </button>
                   <button
                     type="button"
                     className="button-ghost"
                     onClick={() => dismissWarmingBot(activeThread)}
                   >
-                    Remove this bot
+                    {t('Remove this bot')}
                   </button>
                 </div>
               </div>
             ) : shownMessages.length === 0 ? (
               pastOpen ? (
                 <p className="past-state">
-                  This conversation holds no words the app can draw.
+                  {t('This conversation holds no words the app can draw.')}
                 </p>
               ) : (
               <div className="empty-state">
@@ -4489,13 +4517,13 @@ export default function App() {
                 />
                 <h2>
                   {activeThread.avatar.kind === 'group'
-                    ? 'What should this group handle?'
-                    : 'What should this agent handle?'}
+                    ? t('What should this group handle?')
+                    : t('What should this agent handle?')}
                 </h2>
                 <p>
                   {activeThread.avatar.kind === 'group'
-                    ? 'Give the crew a job, or @ a bot to ask it directly. The rest can stay silent.'
-                    : 'Give it a job. It works while you sleep.'}
+                    ? t('Give the crew a job, or @ a bot to ask it directly. The rest can stay silent.')
+                    : t('Give it a job. It works while you sleep.')}
                 </p>
               </div>
               )
@@ -4503,9 +4531,8 @@ export default function App() {
               <>
                 {pastOpen ? (
                   <p className="past-notice">
-                    This conversation started outside the app on{' '}
-                    {shortDay(pastOpen.session.lastActive)}. Your next message
-                    continues it.
+                    {t('This conversation started outside the app on')}{' '}
+                    {shortDay(pastOpen.session.lastActive)}{t('. Your next message continues it.')}
                   </p>
                 ) : (
                   <div className="chat-time">{activeThread.chatTime}</div>
@@ -4559,7 +4586,11 @@ export default function App() {
                           <button
                             type="button"
                             className="bubble-copy"
-                            aria-label={copiedId === message.id ? COPIED_LABEL : COPY_LABEL}
+                            aria-label={
+                              copiedId === message.id
+                                ? t(COPIED_LABEL)
+                                : t(COPY_LABEL)
+                            }
                             onClick={() => copyMessage(message)}
                           >
                             {copiedId === message.id ? (
@@ -4570,12 +4601,12 @@ export default function App() {
                             {/* Only the mark sits on the bubble; the word it
                                 stands for waits until the pointer rests. */}
                             <span className="bubble-copy-word" aria-hidden="true">
-                              {copiedId === message.id ? COPIED_LABEL : COPY_WORD}
+                              {copiedId === message.id ? t(COPIED_LABEL) : t(COPY_WORD)}
                             </span>
                           </button>
                         ) : null}
                         {message.steered ? (
-                          <span className="message-steered">{STEERED_NOTE}</span>
+                          <span className="message-steered">{t(STEERED_NOTE)}</span>
                         ) : null}
                         {messageReactions(message, activeThread.name).length ? (
                           <span className="reaction-row">
@@ -4669,8 +4700,8 @@ export default function App() {
                               />
                               <span className="thinking-label">
                                 {live.tool
-                                  ? `${live.member.name} is using ${live.tool}…`
-                                  : `${live.member.name} is thinking…`}
+                                  ? t('{name} is using {tool}…', { name: live.member.name, tool: live.tool })
+                                  : t('{name} is thinking…', { name: live.member.name })}
                                 <span className="thinking-detail">
                                   {live.tool
                                     ? toolDetail(live.toolDetail)
@@ -4690,7 +4721,7 @@ export default function App() {
                           showBadge={false}
                         />
                         <span className="thinking-label">
-                          The group is thinking…
+                          {t('The group is thinking…')}
                         </span>
                       </div>
                     )
@@ -4710,7 +4741,7 @@ export default function App() {
                             effort: activeThread.effort,
                             writing: true,
                           })}
-                          {waitedFor(activeThread.id) ? ` · ${waitedFor(activeThread.id)}` : ''}
+                          {waitedFor(activeThread.id) ? t('· {p0}', { p0: waitedFor(activeThread.id) }) : ''}
                           <span className="thinking-detail">
                             {activeThread.tool
                               ? toolDetail(activeThread.toolDetail)
@@ -4740,7 +4771,7 @@ export default function App() {
                           tool: activeThread.tool,
                           effort: activeThread.effort,
                         })}
-                        {waitedFor(activeThread.id) ? ` · ${waitedFor(activeThread.id)}` : ''}
+                        {waitedFor(activeThread.id) ? t('· {p0}', { p0: waitedFor(activeThread.id) }) : ''}
                         <span className="thinking-detail">
                           {activeThread.tool
                             ? toolDetail(activeThread.toolDetail)
@@ -4795,7 +4826,7 @@ export default function App() {
                 <div
                   className="mention-menu"
                   role="listbox"
-                  aria-label="Mention a bot"
+                  aria-label={t('Mention a bot')}
                 >
                   {mentionMatch.suggestions.map((member, index) => (
                     <button
@@ -4850,8 +4881,8 @@ export default function App() {
                         <button
                           type="button"
                           className="attachment-remove"
-                          aria-label={`Remove ${attachment.name}`}
-                          title="Remove attachment"
+                          aria-label={t('Remove {name}', { name: attachment.name })}
+                          title={t('Remove attachment')}
                           onClick={() => removeAttachment(attachment.id)}
                         >
                           ×
@@ -4866,9 +4897,9 @@ export default function App() {
                         </span>
                         <span className="attachment-size">
                           {attachment.status === 'uploading'
-                            ? 'Copying…'
+                            ? t('Copying…')
                             : attachment.status === 'failed'
-                              ? 'Not copied'
+                              ? t('Not copied')
                               : formatFileSize(attachment.size)}
                         </span>
                       </div>
@@ -4879,13 +4910,13 @@ export default function App() {
 
               {attachmentNote ? (
                 <p className="composer-note" role="status">
-                  {attachmentNote}
+                  {localize(attachmentNote)}
                 </p>
               ) : null}
 
               {dictationNote ? (
                 <p className="composer-note" role="status">
-                  {dictationNote}
+                  {localize(dictationNote)}
                 </p>
               ) : null}
 
@@ -4901,7 +4932,7 @@ export default function App() {
                       {pastOpen.group.name}
                     </span>
                     <span className="composer-context-since">
-                      lives on the host, since{' '}
+                      {t('lives on the host, since')}{' '}
                       {shortDay(pastOpen.session.lastActive)}
                     </span>
                   </span>
@@ -4910,14 +4941,14 @@ export default function App() {
                     className="composer-context-action"
                     onClick={startFreshFromPast}
                   >
-                    Start a new one
+                    {t('Start a new one')}
                   </button>
                   <button
                     type="button"
                     className="composer-context-action is-primary"
                     onClick={continuePastConversation}
                   >
-                    Continue in {pastOpen.group.name}
+                    {t('Continue in')} {pastOpen.group.name}
                   </button>
                 </div>
               ) : null}
@@ -4927,8 +4958,8 @@ export default function App() {
                 <button
                   type="button"
                   className="composer-button attach-button"
-                  aria-label="Attach a file"
-                  title="Attach a file"
+                  aria-label={t('Attach a file')}
+                  title={t('Attach a file')}
                   onClick={() => fileRef.current?.click()}
                 >
                   <PlusIcon size={18} />
@@ -4949,18 +4980,18 @@ export default function App() {
                   placeholder={
                     activeThread.pending
                       ? activeThread.serveFailed
-                        ? 'This bot is not connected yet…'
-                        : 'Waiting for Hermes to connect this bot…'
+                        ? t('This bot is not connected yet…')
+                        : t('Waiting for Hermes to connect this bot…')
                       : listening
-                        ? 'Listening...'
+                        ? t('Listening...')
                         : activeThread.members?.length
-                          ? 'Message the group — @ a bot to ask it directly'
-                          : `Message ${activeThread.name}`
+                          ? t('Message the group — @ a bot to ask it directly')
+                          : t('Message {name}', { name: activeThread.name })
                   }
                   onChange={handleDraftChange}
                   onKeyDown={handleComposerKeyDown}
                   onBlur={() => setMentionHidden(true)}
-                  aria-label={`Message ${activeThread.name}`}
+                  aria-label={t('Message {name}', { name: activeThread.name })}
                 />
                 {activeThread.avatar.kind === 'group' ? null : (
                 <ModelPicker
@@ -5007,8 +5038,8 @@ export default function App() {
                   <button
                     type="button"
                     className="composer-button stop-button"
-                    aria-label="Stop"
-                    title="Stop this turn"
+                    aria-label={t('Stop')}
+                    title={t('Stop this turn')}
                     onClick={stopTurn}
                   >
                     <StopIcon size={20} />
@@ -5017,8 +5048,8 @@ export default function App() {
                   <button
                     type="submit"
                     className="composer-button send-button"
-                    aria-label="Send message"
-                    title="Send message"
+                    aria-label={t('Send message')}
+                    title={t('Send message')}
                   >
                     <ArrowUpIcon size={18} />
                   </button>
@@ -5026,8 +5057,8 @@ export default function App() {
                   <button
                     type="button"
                     className={`composer-button mic-button ${listening ? 'is-listening' : ''}`}
-                    aria-label="Voice message"
-                    title="Voice message"
+                    aria-label={t('Voice message')}
+                    title={t('Voice message')}
                     onClick={toggleListening}
                   >
                     <MicIcon size={18} />
@@ -5098,9 +5129,9 @@ export default function App() {
                   shape: bot.shape,
                   variant: 'neutral',
                 },
-                preview: 'Starting…',
+                preview: t('Starting…'),
                 time: '…',
-                chatTime: 'Now',
+                chatTime: t('Now'),
                 messages: [],
                 pending: true,
                 pendingSince: now,

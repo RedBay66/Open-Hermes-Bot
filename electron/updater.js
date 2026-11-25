@@ -21,14 +21,25 @@ const UNSUPPORTED_MESSAGE =
   'Updates are found by the installed app, not by a copy running from the sources.';
 
 /**
+ * This fork is a personal Simplified Chinese edition. An upstream release is
+ * the English app, and installing it would replace the translation. The
+ * person can still see that a release exists. Nothing is downloaded.
+ */
+const UPSTREAM_HOLD_MESSAGE =
+  'This personal Simplified Chinese edition does not download or install upstream releases, because an official update would replace the translation.';
+
+/**
  * The updater of Hermes Bot.
  *
  * @param {object} options
  * @param {{ isPackaged: boolean, getVersion: () => string }} options.app
  * @param {import('electron-updater').AppUpdater} options.autoUpdater the electron-updater instance
  * @param {(event: object) => void} options.onEvent tells the shell what happened
+ * @param {boolean} [options.holdUpstream] when set, a found release is shown
+ *   and never downloaded. The personal Chinese edition uses this so an
+ *   official English build cannot replace it.
  */
-function createUpdater({ app, autoUpdater, onEvent }) {
+function createUpdater({ app, autoUpdater, onEvent, holdUpstream = false }) {
   // The download is ours to ask for: the app decides when it happens, and
   // why. electron-updater would otherwise start it on its own.
   autoUpdater.autoDownload = false;
@@ -91,6 +102,17 @@ function createUpdater({ app, autoUpdater, onEvent }) {
   autoUpdater.on('update-available', (info) => {
     found = info?.version ?? found;
     released = info?.releaseDate ?? released;
+    if (holdUpstream) {
+      // Seen, and left where it is. Installing it would replace this edition.
+      emit(AVAILABLE, { message: UPSTREAM_HOLD_MESSAGE });
+      answer({
+        ok: true,
+        state: AVAILABLE,
+        version: found,
+        message: UPSTREAM_HOLD_MESSAGE,
+      });
+      return;
+    }
     emit(AVAILABLE);
     // The download is ours to ask for: the person pressed the button, or the
     // app is getting ready for its next launch.
@@ -127,6 +149,9 @@ function createUpdater({ app, autoUpdater, onEvent }) {
     return {
       version: app.getVersion(),
       supported: Boolean(app.isPackaged),
+      // False on the personal Chinese edition: the page may look, and may not install.
+      upstreamInstall: !holdUpstream,
+      edition: holdUpstream ? 'personal-zh-CN' : '',
     };
   }
 
@@ -192,6 +217,7 @@ function createUpdater({ app, autoUpdater, onEvent }) {
    * @returns {boolean} whether the app is on its way out.
    */
   function install() {
+    if (holdUpstream) return false;
     if (leaving || !ready) return false;
     leaving = true;
     try {
@@ -232,4 +258,8 @@ function createUpdater({ app, autoUpdater, onEvent }) {
   };
 }
 
-module.exports = { createUpdater, UNSUPPORTED_MESSAGE };
+module.exports = {
+  createUpdater,
+  UNSUPPORTED_MESSAGE,
+  UPSTREAM_HOLD_MESSAGE,
+};

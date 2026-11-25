@@ -16,6 +16,7 @@ import {
   type ScheduleRun,
   type ScheduleState,
 } from '../schedules';
+import { localize, t } from '../i18n';
 
 /** The word a row carries, for each place a schedule can stand. */
 const STATE_TEXT: Record<ScheduleState, string> = {
@@ -95,12 +96,12 @@ export function SchedulesSettings({
       // Hermes that was installed without it, and the page says which.
       setHint(
         answer?.status === 501
-          ? 'That host runs a Hermes without its cron module.'
+          ? t('That host runs a Hermes without its cron module.')
           : '',
       );
     } catch (reason) {
       setRows([]);
-      setError(reason instanceof Error ? reason.message : 'The schedules could not be read.');
+      setError(reason instanceof Error ? reason.message : t('The schedules could not be read.'));
     }
   }, [bridge, profile]);
 
@@ -167,7 +168,7 @@ export function SchedulesSettings({
     try {
       const result = await action({ jobId: schedule.id, profile });
       if (!result.ok) {
-        setError(result.error ?? 'The schedule could not be changed.');
+        setError(result.error ?? t('The schedule could not be changed.'));
         setRows((current) =>
           (current ?? []).map((row) =>
             row.id === schedule.id ? schedule : row,
@@ -182,7 +183,7 @@ export function SchedulesSettings({
       setError(
         reason instanceof Error
           ? reason.message
-          : 'The schedule could not be changed.',
+          : t('The schedule could not be changed.'),
       );
       setRows((current) =>
         (current ?? []).map((row) => (row.id === schedule.id ? schedule : row)),
@@ -209,18 +210,18 @@ export function SchedulesSettings({
     try {
       const result = await runner({ jobId: schedule.id, profile });
       if (!result.ok) {
-        setError(result.error ?? 'The schedule could not be asked to run.');
+        setError(result.error ?? t('The schedule could not be asked to run.'));
         return;
       }
       setNotice(
-        `Asked the host to run "${schedule.name}" now. It fires on the next tick, within a minute when the scheduler is running.`,
+        t('Asked the host to run "{name}" now. It fires on the next tick, within a minute when the scheduler is running.', { name: schedule.name }),
       );
       await read();
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'The schedule could not be asked to run.',
+          : t('The schedule could not be asked to run.'),
       );
     } finally {
       setBusy('');
@@ -238,18 +239,18 @@ export function SchedulesSettings({
     try {
       const answer = await writer({ ...draftBody(draft), profile });
       if (!answer.ok) {
-        setDraftError(answer.error ?? 'The host did not create that schedule.');
+        setDraftError(answer.error ?? t('The host did not create that schedule.'));
         return;
       }
       setDraft(EMPTY_DRAFT);
       setFormOpen(false);
-      setNotice('The host holds it now: it is on the list below.');
+      setNotice(t('The host holds it now: it is on the list below.'));
       await read();
     } catch (reason) {
       setDraftError(
         reason instanceof Error
           ? reason.message
-          : 'The host did not create that schedule.',
+          : t('The host did not create that schedule.'),
       );
     } finally {
       setCreating(false);
@@ -260,10 +261,9 @@ export function SchedulesSettings({
     <div className="settings-page">
       <header className="settings-page-head">
         <div>
-          <h2>Schedules</h2>
+          <h2>{t('Schedules')}</h2>
           <p>
-            What a bot runs on its own, on the host. The app draws them; the
-            host's scheduler is what fires them.
+            {t('What a bot runs on its own, on the host. The app draws them; the host\'s scheduler is what fires them.')}
           </p>
         </div>
       </header>
@@ -271,12 +271,12 @@ export function SchedulesSettings({
       <ProfilePicker
         value={profile}
         onChange={setProfile}
-        label="Whose schedules?"
+        label={t('Whose schedules?')}
       />
 
-      {error ? <p className="models-error">{error}</p> : null}
-      {hint ? <p className="settings-hint">{hint}</p> : null}
-      {notice ? <p className="settings-hint">{notice}</p> : null}
+      {error ? <p className="models-error">{localize(error)}</p> : null}
+      {hint ? <p className="settings-hint">{localize(hint)}</p> : null}
+      {notice ? <p className="settings-hint">{localize(notice)}</p> : null}
 
       {standing.text ? (
         <p className="schedule-late" role="status">
@@ -287,10 +287,9 @@ export function SchedulesSettings({
       <section className="settings-card">
         <header className="settings-card-head">
           <div>
-            <h3>The schedules</h3>
+            <h3>{t('The schedules')}</h3>
             <p>
-              A schedule that is off is still there, and does not run. Its
-              times are the host's own, in the host's timezone.
+              {t('A schedule that is off is still there, and does not run. Its times are the host\'s own, in the host\'s timezone.')}
             </p>
           </div>
           <button
@@ -301,7 +300,7 @@ export function SchedulesSettings({
               setDraftError('');
             }}
           >
-            {formOpen ? 'Close' : 'New schedule'}
+            {formOpen ? t('Close') : t('New schedule')}
           </button>
         </header>
 
@@ -309,11 +308,11 @@ export function SchedulesSettings({
           <div className="settings-form schedule-form">
             <div className="settings-field-grid">
               <label className="settings-field">
-                <span className="settings-field-label">Name</span>
+                <span className="settings-field-label">{t('Name')}</span>
                 <input
                   type="text"
                   value={draft.name}
-                  placeholder="The morning read"
+                  placeholder={t('The morning read')}
                   disabled={creating}
                   onChange={(event) =>
                     setDraft({ ...draft, name: event.target.value })
@@ -321,7 +320,7 @@ export function SchedulesSettings({
                 />
               </label>
               <label className="settings-field">
-                <span className="settings-field-label">When</span>
+                <span className="settings-field-label">{t('When')}</span>
                 <input
                   type="text"
                   value={draft.when}
@@ -333,18 +332,17 @@ export function SchedulesSettings({
                   }
                 />
                 <span className="settings-field-note">
-                  An expression, an interval, a phrase or a date. Read in the
-                  host's own timezone: nine there, not here.
+                  {t('An expression, an interval, a phrase or a date. Read in the host\'s own timezone: nine there, not here.')}
                 </span>
               </label>
             </div>
 
             <label className="settings-field">
-              <span className="settings-field-label">What it should do</span>
+              <span className="settings-field-label">{t('What it should do')}</span>
               <textarea
                 value={draft.prompt}
                 rows={3}
-                placeholder="Read the inbox, and answer what can be answered."
+                placeholder={t('Read the inbox, and answer what can be answered.')}
                 disabled={creating}
                 onChange={(event) =>
                   setDraft({ ...draft, prompt: event.target.value })
@@ -354,7 +352,7 @@ export function SchedulesSettings({
 
             <div className="settings-field-grid">
               <label className="settings-field">
-                <span className="settings-field-label">Hand the result to</span>
+                <span className="settings-field-label">{t('Hand the result to')}</span>
                 <select
                   value={draft.deliver}
                   disabled={creating}
@@ -362,23 +360,23 @@ export function SchedulesSettings({
                     setDraft({ ...draft, deliver: event.target.value })
                   }
                 >
-                  <option value="local">Keep it on the host</option>
+                  <option value="local">{t('Keep it on the host')}</option>
                   {bots
                     .filter((bot) => bot.name)
                     .map((bot) => (
                       <option key={bot.name} value={`bot-chat:${bot.name}`}>
-                        {bot.title}'s chat
+                        {t("{name}'s chat", { name: bot.title })}
                       </option>
                     ))}
                 </select>
               </label>
               <label className="settings-field">
-                <span className="settings-field-label">Runs, at most</span>
+                <span className="settings-field-label">{t('Runs, at most')}</span>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={draft.repeat}
-                  placeholder="forever"
+                  placeholder={t('forever')}
                   disabled={creating}
                   onChange={(event) =>
                     setDraft({ ...draft, repeat: event.target.value })
@@ -396,7 +394,7 @@ export function SchedulesSettings({
                 disabled={creating}
                 onClick={() => void create()}
               >
-                {creating ? 'Creating…' : 'Create the schedule'}
+                {creating ? t('Creating…') : t('Create the schedule')}
               </button>
               <button
                 type="button"
@@ -407,7 +405,7 @@ export function SchedulesSettings({
                   setDraftError('');
                 }}
               >
-                Clear
+                {t('Clear')}
               </button>
             </div>
           </div>
@@ -443,7 +441,7 @@ export function SchedulesSettings({
                         lastRunText(schedule, now),
                         deliverText(schedule.deliver),
                         schedule.noAgent
-                          ? 'a script, its output stays on the host'
+                          ? t('a script, its output stays on the host')
                           : '',
                       ]
                         .filter(Boolean)
@@ -460,15 +458,17 @@ export function SchedulesSettings({
                         onClick={() => setOpenRuns(open ? '' : schedule.id)}
                       >
                         {open
-                          ? 'hide the runs'
-                          : `${runsOf.length} run${runsOf.length === 1 ? '' : 's'}`}
+                          ? t('hide the runs')
+                          : runsOf.length === 1
+                            ? t('{count} run', { count: runsOf.length })
+                            : t('{count} runs', { count: runsOf.length })}
                       </button>
                     ) : null}
                   </span>
                   <span
                     className={`capability-tag schedule-state is-${schedule.state}`}
                   >
-                    {STATE_TEXT[schedule.state]}
+                    {t(STATE_TEXT[schedule.state])}
                   </span>
                   {/* The slot is always there: a row without a run keeps its
                       state and its switch in the same column as the others. */}
@@ -480,7 +480,7 @@ export function SchedulesSettings({
                         disabled={busy === schedule.id}
                         onClick={() => void runNow(schedule)}
                       >
-                        {busy === schedule.id ? 'Asking…' : 'Run now'}
+                        {busy === schedule.id ? t('Asking…') : t('Run now')}
                       </button>
                     ) : null}
                   </span>
@@ -489,7 +489,11 @@ export function SchedulesSettings({
                       type="button"
                       role="switch"
                       aria-checked={!paused}
-                      aria-label={`${paused ? 'Resume' : 'Pause'} ${schedule.name}`}
+                      aria-label={
+                        paused
+                          ? t('Resume {name}', { name: schedule.name })
+                          : t('Pause {name}', { name: schedule.name })
+                      }
                       className={`settings-switch ${paused ? '' : 'is-on'}`}
                       disabled={busy === schedule.id}
                       onClick={() => void setPaused(schedule, !paused)}
@@ -512,15 +516,16 @@ export function SchedulesSettings({
                         <span className="schedule-run-when">
                           {distance(run.at, now)}
                           {run.messages
-                            ? ` · ${run.messages} line${run.messages === 1 ? '' : 's'}`
+                            ? run.messages === 1
+                              ? t('· {count} line', { count: run.messages })
+                              : t('· {count} lines', { count: run.messages })
                             : ''}
                         </span>
                       </button>
                     ))}
                     {runsOf.length > RUNS_SHOWN ? (
                       <p className="settings-hint">
-                        {runsOf.length - RUNS_SHOWN} older runs of this schedule
-                        are in the past conversations of the bot.
+                        {runsOf.length - RUNS_SHOWN} {t('older runs of this schedule are in the past conversations of the bot.')}
                       </p>
                     ) : null}
                   </div>
@@ -530,8 +535,7 @@ export function SchedulesSettings({
           })}
           {rows && rows.length === 0 ? (
             <p className="settings-hint">
-              {emptyText(profile)} It is made here, and lives on the host from
-              then on.
+              {emptyText(profile)} {t('It is made here, and lives on the host from then on.')}
             </p>
           ) : null}
         </div>
